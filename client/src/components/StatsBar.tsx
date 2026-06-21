@@ -37,13 +37,13 @@ export function StatsBar({ state }: StatsBarProps) {
       <Stat label="Средний стек" value={formatChips(averageStack)} />
       <Stat label="В игре" value={`${playersRemaining} / ${totalPlayers}`} />
       <Stat
-        label="Призовой фонд"
+        label="Фишек в игре"
         value={formatChips(prizePool)}
         accent="text-gold"
       />
       {showRebuyMaster ? (
         <Stat
-          label={`Ребай-мастер · ${rebuyMaster!.rebuyCount}`}
+          label={`Шейх дня · ${rebuyMaster!.rebuyCount + rebuyMaster!.doubleRebuyCount * 2}`}
           value={rebuyMaster!.name}
           accent="text-sky-300"
         />
