@@ -1,5 +1,7 @@
 /** Small formatting helpers shared by display + admin UIs. */
 
+import type { TournamentState } from "@poker-club/shared";
+
 /** 125 -> "02:05", 3600 -> "01:00:00". */
 export function formatClock(totalSeconds: number): string {
   const s = Math.max(0, Math.floor(totalSeconds));
@@ -27,4 +29,27 @@ export function formatBlinds(
 ): string {
   if (isBreak || (!small && !big)) return "BREAK";
   return `${formatChips(small)} / ${formatChips(big)}`;
+}
+
+/**
+ * Seconds remaining until the next scheduled break level.
+ *
+ * Sums the current level's remaining time (unless the current level is itself a
+ * break) plus the full duration of every subsequent non-break level, stopping at
+ * the first break found. Returns null when no break is scheduled ahead — the
+ * caller can use that to hide the "time until break" panel.
+ */
+export function secondsUntilNextBreak(state: TournamentState): number | null {
+  const { levels, currentLevelIndex, remainingSeconds } = state;
+  const current = levels[currentLevelIndex];
+  if (!current) return null;
+
+  let total = 0;
+  if (!current.isBreak) total += remainingSeconds;
+
+  for (let i = currentLevelIndex + 1; i < levels.length; i++) {
+    if (levels[i].isBreak) return total;
+    total += levels[i].durationSec;
+  }
+  return null;
 }

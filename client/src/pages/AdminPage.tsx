@@ -33,7 +33,10 @@ export function AdminPage() {
   const [maxRebuys, setMaxRebuys] = useState("0");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -134,6 +137,30 @@ export function AdminPage() {
     }
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    setLogoError(null);
+    try {
+      await api.uploadLogo(file);
+    } catch (err) {
+      setLogoError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  }
+
+  async function handleClearLogo() {
+    try {
+      setLogoError(null);
+      await api.clearLogo();
+    } catch (err) {
+      setLogoError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   if (!state) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-xl text-slate-400">
@@ -144,6 +171,7 @@ export function AdminPage() {
 
   const currentLevel = state.levels[state.currentLevelIndex];
   const backgroundUrl = state.backgroundImage ?? undefined;
+  const logoUrl = state.logoImage ?? undefined;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
@@ -307,6 +335,49 @@ export function AdminPage() {
                 className="rounded border border-red-500/40 bg-red-500/10 px-3 py-1 text-sm text-red-300 hover:bg-red-500/20"
               >
                 Убрать фон
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Club logo */}
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <h2 className="mb-4 text-xl font-bold">Логотип клуба</h2>
+        {logoError && (
+          <p className="mb-3 rounded bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            {logoError}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="h-24 w-24 overflow-hidden rounded-full border border-gold/30 bg-black/30">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt="Логотип"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-xs text-slate-500">
+                Нет логотипа
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              disabled={uploadingLogo}
+              className="text-sm text-slate-300 file:mr-3 file:rounded file:border-0 file:bg-gold file:px-4 file:py-2 file:font-semibold file:text-black hover:file:brightness-110"
+            />
+            {state.logoImage && (
+              <button
+                onClick={handleClearLogo}
+                className="rounded border border-red-500/40 bg-red-500/10 px-3 py-1 text-sm text-red-300 hover:bg-red-500/20"
+              >
+                Убрать логотип
               </button>
             )}
           </div>

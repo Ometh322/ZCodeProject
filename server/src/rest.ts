@@ -13,6 +13,7 @@ import {
   loadState,
   removePlayer,
   setBackgroundImage,
+  setLogoImage,
   updatePlayer,
   upsertTournament,
 } from "./repository.js";
@@ -113,6 +114,37 @@ export function createApiRouter(engine: TimerEngine, upload: multer.Multer): Rou
       await setBackgroundImage(null);
       await engine.sync();
       res.json({ backgroundImage: null });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  // Club logo upload — same pattern as the background, stored under a separate
+  // column so the display screen can show it as the club emblem.
+  router.post(
+    "/tournament/logo",
+    upload.single("image"),
+    async (req, res) => {
+      if (!req.file) {
+        res.status(400).json({ error: "Image file required (field name: image)" });
+        return;
+      }
+      const relativePath = `/uploads/${req.file.filename}`;
+      try {
+        await setLogoImage(relativePath);
+        await engine.sync();
+        res.json({ logoImage: relativePath });
+      } catch (err) {
+        res.status(500).json({ error: (err as Error).message });
+      }
+    },
+  );
+
+  router.delete("/tournament/logo", async (_req, res) => {
+    try {
+      await setLogoImage(null);
+      await engine.sync();
+      res.json({ logoImage: null });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
     }

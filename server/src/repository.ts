@@ -90,6 +90,8 @@ export async function loadState(): Promise<TournamentState | null> {
     addonCount: p.addonCount,
     paidAmount: p.paidAmount,
     paidCash: p.paidCash,
+    bountyCount: p.bountyCount,
+    eliminationOrder: p.eliminationOrder,
   }));
 
   // Total chips in play is derived from the actual stacks.
@@ -106,6 +108,7 @@ export async function loadState(): Promise<TournamentState | null> {
     totalChips,
     startedAt: t.startedAt?.toISOString() ?? null,
     backgroundImage: t.backgroundImage,
+    logoImage: t.logoImage,
     buyInChips: t.buyInChips,
     buyInCost: t.buyInCost,
     rebuyChips: t.rebuyChips,
@@ -260,11 +263,44 @@ export async function updatePlayer(
   playerId: string,
   patch: UpdatePlayerInput,
 ): Promise<TournamentState> {
-  // Prisma accepts paidAmount directly; we build a local patch type that
-  // extends the wire input with the server-derived paidAmount field.
-  type PlayerPatch = UpdatePlayerInput & { paidAmount?: number };
+  // Local patch type extends the wire input with server-derived fields the
+  // client must not set directly (paidAmount, eliminationOrder).
+  type PlayerPatch = UpdatePlayerInput & {
+    paidAmount?: number;
+    eliminationOrder?: number | null;
+  };
 
   let data: PlayerPatch = { ...patch };
+
+  // Always load the player up front: we need the current `eliminated` flag to
+  // detect the false→true elimination transition, and the tournament pricing
+  // if a cost recompute is needed.
+  const player = await prisma.player.findUnique({
+    where: { id: playerId },
+    include: {
+      tournament: {
+        select: {
+          id: true,
+          buyInCost: true,
+          rebuyCost: true,
+          doubleRebuyCost: true,
+          addonCost: true,
+        },
+      },
+    },
+  });
+  if (!player) throw new Error("Игрок не найден");
+
+  // Elimination rank: assigned server-side on the false→true transition.
+  // 1 = first out, N = last out. Cleared when a player is restored.
+  if (patch.eliminated === true && !player.eliminated) {
+    const eliminatedCount = await prisma.player.count({
+      where: { tournamentId: player.tournamentId, eliminated: true },
+    });
+    data.eliminationOrder = eliminatedCount + 1;
+  } else if (patch.eliminated === false && player.eliminated) {
+    data.eliminationOrder = null;
+  }
 
   // If rebuy/addon counts are being edited directly, recompute the paid amount.
   if (
@@ -272,33 +308,15 @@ export async function updatePlayer(
     patch.doubleRebuyCount !== undefined ||
     patch.addonCount !== undefined
   ) {
-    const player = await prisma.player.findUnique({
-      where: { id: playerId },
-      include: {
-        tournament: {
-          select: {
-            buyInCost: true,
-            rebuyCost: true,
-            doubleRebuyCost: true,
-            addonCost: true,
-          },
-        },
-      },
-    });
-    if (player) {
-      const rebuyCount = patch.rebuyCount ?? player.rebuyCount;
-      const doubleRebuyCount = patch.doubleRebuyCount ?? player.doubleRebuyCount;
-      const addonCount = patch.addonCount ?? player.addonCount;
-      data = {
-        ...patch,
-        paidAmount: computePaidAmount(
-          rebuyCount,
-          doubleRebuyCount,
-          addonCount,
-          player.tournament,
-        ),
-      };
-    }
+    const rebuyCount = patch.rebuyCount ?? player.rebuyCount;
+    const doubleRebuyCount = patch.doubleRebuyCount ?? player.doubleRebuyCount;
+    const addonCount = patch.addonCount ?? player.addonCount;
+    data.paidAmount = computePaidAmount(
+      rebuyCount,
+      doubleRebuyCount,
+      addonCount,
+      player.tournament,
+    );
   }
   await prisma.player.update({ where: { id: playerId }, data });
   const state = await loadState();
@@ -449,6 +467,19 @@ export async function setBackgroundImage(relativePath: string | null): Promise<T
   await prisma.tournament.update({
     where: { id: t.id },
     data: { backgroundImage: relativePath },
+  });
+  const state = await loadState();
+  if (!state) throw new Error("Failed to load state");
+  return state;
+}
+
+/** Sets the club logo image path on the active tournament. */
+export async function setLogoImage(relativePath: string | null): Promise<TournamentState> {
+  const t = await getActiveTournament();
+  if (!t) throw new Error("No active tournament");
+  await prisma.tournament.update({
+    where: { id: t.id },
+    data: { logoImage: relativePath },
   });
   const state = await loadState();
   if (!state) throw new Error("Failed to load state");

@@ -111,13 +111,15 @@ export function PlayerTable({
               <th className="pb-2 pr-3">Стоимость</th>
               <th className="pb-2 pr-3">Внесено</th>
               <th className="pb-2 pr-3">Долг</th>
+              <th className="pb-2 pr-3">Баунти</th>
+              <th className="pb-2 pr-3">Место</th>
               <th className="pb-2"></th>
             </tr>
           </thead>
           <tbody>
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-4 text-center text-slate-500">
+                <td colSpan={8} className="py-4 text-center text-slate-500">
                   Пока никого нет — добавьте игроков выше.
                 </td>
               </tr>
@@ -187,6 +189,40 @@ export function PlayerTable({
                     }`}
                   >
                     {debt > 0 ? formatChips(debt) : "Оплачено"}
+                  </td>
+                  <td className="py-2 pr-3">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() =>
+                          onUpdate(p.id, { bountyCount: Math.max(0, p.bountyCount - 1) })
+                        }
+                        className="h-6 w-6 rounded bg-white/10 text-slate-300 hover:bg-white/20"
+                        aria-label="Убрать баунти"
+                        title="−1 баунти"
+                      >
+                        −
+                      </button>
+                      <span className="w-6 text-center font-mono text-gold">
+                        {p.bountyCount}
+                      </span>
+                      <button
+                        onClick={() => onUpdate(p.id, { bountyCount: p.bountyCount + 1 })}
+                        className="h-6 w-6 rounded bg-white/10 text-slate-300 hover:bg-white/20"
+                        aria-label="Добавить баунти"
+                        title="+1 баунти"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </td>
+                  <td className="py-2 pr-3 text-center font-mono text-slate-300">
+                    {p.eliminationOrder !== null ? (
+                      <span className="rounded bg-gold/15 px-2 py-0.5 font-bold text-gold">
+                        {ordinal(p.eliminationOrder)}
+                      </span>
+                    ) : (
+                      <span className="text-slate-600">—</span>
+                    )}
                   </td>
                   <td className="py-2">
                     <div className="flex flex-wrap gap-1.5">
@@ -292,4 +328,9 @@ function ActionButton({
       {children}
     </button>
   );
+}
+
+/** 1 -> "1-е", 2 -> "2-е", 21 -> "21-е". Russian ordinal suffix. */
+function ordinal(n: number): string {
+  return `${n}-е`;
 }

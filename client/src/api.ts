@@ -146,4 +146,28 @@ export const api = {
       headers: authHeaders(),
     });
   },
+
+  /** Uploads the club logo. Uses FormData, so no JSON content-type. */
+  async uploadLogo(file: File): Promise<{ logoImage: string }> {
+    const form = new FormData();
+    form.append("image", file);
+    const res = await fetch(`${BASE}/api/tournament/logo`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: form,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(body.error ?? `Upload failed: ${res.status}`);
+    }
+    return res.json();
+  },
+
+  /** Clears the club logo. */
+  clearLogo(): Promise<{ logoImage: null }> {
+    return request<{ logoImage: null }>("/api/tournament/logo", {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+  },
 };

@@ -8,13 +8,13 @@ interface TimerProps {
 /**
  * The big MM:SS clock that dominates the display screen.
  *
- * Pulses amber while paused so the room notices it is not a freeze but a
+ * Pulses gold while paused so the room notices it is not a freeze but a
  * deliberate pause. Goes red in the final minute of a level.
  */
 export function Timer({ remainingSeconds, paused }: TimerProps) {
   const danger = !paused && remainingSeconds > 0 && remainingSeconds <= 60;
   const color = paused
-    ? "text-amber-400"
+    ? "text-gold"
     : danger
       ? "text-red-500"
       : "text-white";
@@ -29,7 +29,7 @@ export function Timer({ remainingSeconds, paused }: TimerProps) {
       >
         {formatClock(remainingSeconds)}
       </div>
-      <div className="mt-2 text-2xl font-semibold uppercase tracking-[0.3em] text-slate-400">
+      <div className="mt-2 text-2xl font-semibold uppercase tracking-[0.3em] text-gold/70">
         {paused ? "Пауза" : danger ? "Финальная минута" : "До следующего уровня"}
       </div>
     </div>

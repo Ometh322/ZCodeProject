@@ -27,6 +27,8 @@ model Tournament {
 
   // Background image (relative URL of the uploaded file, e.g. "/uploads/abc.jpg").
   backgroundImage String?
+  // Club logo image (relative URL), shown as the emblem on the display screen.
+  logoImage       String?
 
   // Four purchase types, each split into chips (added to a player's stack) and
   // cost (added to a player's paidAmount). Keeping them separate lets a rebuy
@@ -84,6 +86,11 @@ model Player {
   addonCount       Int @default(0)
   paidAmount       Int @default(0)
   paidCash         Int @default(0)
+  // Bounty tokens knocked out by this player. Edited by the operator.
+  bountyCount      Int @default(0)
+  // Global elimination rank: null while still in play, 1 = first out, last =
+  // winner. Assigned server-side on elimination to avoid client races.
+  eliminationOrder Int?
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 

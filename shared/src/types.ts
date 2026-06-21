@@ -48,6 +48,14 @@ export interface Player {
   paidAmount: number;
   /** Cash the player has actually handed to the cashier. Edited by the operator. */
   paidCash: number;
+  /** Bounty tokens knocked out by this player. Edited by the operator via +/- . */
+  bountyCount: number;
+  /**
+   * Global elimination rank: null while still in play, 1 = first eliminated,
+   * last number = winner (last one standing). Assigned server-side on
+   * elimination to avoid client races; the client reads but never sets it.
+   */
+  eliminationOrder: number | null;
 }
 
 /**
@@ -72,6 +80,8 @@ export interface TournamentState {
   startedAt: string | null;
   /** Relative URL of the uploaded background image, or null. */
   backgroundImage: string | null;
+  /** Relative URL of the uploaded club logo, or null. */
+  logoImage: string | null;
 
   // Four purchase types, each split into chips (added to stack) and cost
   // (added to paidAmount). They are independent: a rebuy can grant 10000 chips
@@ -135,6 +145,8 @@ export interface UpdatePlayerInput {
   addonCount?: number;
   /** Cash the player has handed to the cashier. */
   paidCash?: number;
+  /** Bounty token count, edited via +/- in the roster. */
+  bountyCount?: number;
 }
 
 /** Names of the built-in blind structure presets. */

@@ -37,7 +37,7 @@ export function StatsBar({ state }: StatsBarProps) {
       <Stat label="Средний стек" value={formatChips(averageStack)} />
       <Stat label="В игре" value={`${playersRemaining} / ${totalPlayers}`} />
       <Stat
-        label="Фишек в игре"
+        label="Призовой фонд"
         value={formatChips(prizePool)}
         accent="text-gold"
       />
@@ -45,13 +45,13 @@ export function StatsBar({ state }: StatsBarProps) {
         <Stat
           label={`Шейх дня · ${rebuyMaster!.rebuyCount + rebuyMaster!.doubleRebuyCount * 2}`}
           value={rebuyMaster!.name}
-          accent="text-sky-300"
+          accent="text-gold-light"
         />
       ) : (
         <Stat
           label="Статус"
           value={statusLabel(state.status)}
-          accent={state.status === "running" ? "text-emerald-400" : "text-amber-400"}
+          accent={state.status === "running" ? "text-emerald-400" : "text-gold"}
         />
       )}
     </div>
@@ -81,8 +81,8 @@ function Stat({
   accent?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/40 px-6 py-4 text-center backdrop-blur-sm">
-      <div className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+    <div className="rounded-2xl border border-gold/25 bg-black/60 px-6 py-4 text-center backdrop-blur-sm">
+      <div className="text-xs font-semibold uppercase tracking-widest text-gold/70">
         {label}
       </div>
       <div className={`mt-1 text-3xl font-bold ${accent}`}>{value}</div>
