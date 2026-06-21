@@ -37,7 +37,7 @@ export function StatsBar({ state }: StatsBarProps) {
       <Stat label="Средний стек" value={formatChips(averageStack)} />
       <Stat label="В игре" value={`${playersRemaining} / ${totalPlayers}`} />
       <Stat
-        label="Призовой фонд"
+        label="Фишек в игре"
         value={formatChips(prizePool)}
         accent="text-gold"
       />
