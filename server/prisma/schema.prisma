@@ -1,0 +1,100 @@
+// Prisma schema for Poker Tournament Manager.
+//
+// The data model is intentionally minimal: there is exactly one "active"
+// tournament at a time (enforced in application code, not at the DB level),
+// and all of its levels and players hang off it. We also persist admin
+// sessions so a refresh of the admin panel keeps the bearer token valid.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tournament {
+  id              String   @id @default(cuid())
+  name            String
+  status          String   @default("setup") // setup | running | paused | finished
+  currentLevelIdx Int      @default(0)
+  remainingSec    Int      @default(0)
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Background image (relative URL of the uploaded file, e.g. "/uploads/abc.jpg").
+  backgroundImage String?
+
+  // Four purchase types, each split into chips (added to a player's stack) and
+  // cost (added to a player's paidAmount). Keeping them separate lets a rebuy
+  // grant, say, 10000 chips while costing 5000 — they are independent numbers.
+  buyInChips        Int @default(0)
+  buyInCost         Int @default(0)
+  rebuyChips        Int @default(0)
+  rebuyCost         Int @default(0)
+  doubleRebuyChips  Int @default(0)
+  doubleRebuyCost   Int @default(0)
+  addonChips        Int @default(0)
+  addonCost         Int @default(0)
+  // Maximum rebuys (single + double combined) per player. 0 = unlimited.
+  maxRebuys         Int @default(0)
+
+  levels   Level[]
+  players  Player[]
+
+  @@index([status])
+}
+
+model Level {
+  id           String     @id @default(cuid())
+  tournamentId String
+  order        Int
+  durationSec  Int
+  smallBlind   Int
+  bigBlind     Int
+  ante         Int        @default(0)
+  isBreak      Boolean    @default(false)
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@index([tournamentId, order])
+}
+
+model Player {
+  id                String   @id @default(cuid())
+  tournamentId      String
+  name              String
+  stack             Int      @default(0)
+  eliminated        Boolean  @default(false)
+  eliminatedAtLevel Int?
+  createdAt         DateTime @default(now())
+
+  // Purchase tracking — separate counters per purchase type.
+  //   rebuyCount       — single rebuys taken
+  //   doubleRebuyCount — double rebuys taken
+  //   addonCount       — addons taken
+  // `paidAmount` is the auto-derived cost (buy-in + rebuys + addons).
+  // `paidCash` is what the player has actually handed to the cashier; the
+  // difference (paidAmount - paidCash) is their outstanding debt.
+  rebuyCount       Int @default(0)
+  doubleRebuyCount Int @default(0)
+  addonCount       Int @default(0)
+  paidAmount       Int @default(0)
+  paidCash         Int @default(0)
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@index([tournamentId, eliminated])
+}
+
+model AdminSession {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

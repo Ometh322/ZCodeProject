@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans text-slate-100 antialiased;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+/* The display page is meant for a TV/projector in the room: hide the cursor
+   after a moment of inactivity so it doesn't sit on screen during a tournament. */
+@media (display-none-cursor) {
+  /* Reserved for future custom property usage. */
+}
+
+.idle-cursor-none {
+  cursor: none;
+}

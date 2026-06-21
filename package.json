@@ -1,0 +1,26 @@
+{
+  "name": "poker-club",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Poker Tournament Manager — display screen + admin panel",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm -w server run dev",
+    "dev:client": "npm -w client run dev",
+    "build": "npm -w server run build && npm -w client run build",
+    "db:migrate": "npm -w server run db:migrate",
+    "db:seed": "npm -w server run db:seed",
+    "start": "npm -w server start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
