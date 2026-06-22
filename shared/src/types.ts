@@ -82,6 +82,13 @@ export interface TournamentState {
   backgroundImage: string | null;
   /** Relative URL of the uploaded club logo, or null. */
   logoImage: string | null;
+  /**
+   * Relative URLs of optional custom sound files for the display alerts. When
+   * null the client synthesizes a default tone via the Web Audio API.
+   */
+  soundAlert1Min: string | null;
+  soundAlert10Sec: string | null;
+  soundAlertLevel: string | null;
 
   // Four purchase types, each split into chips (added to stack) and cost
   // (added to paidAmount). They are independent: a rebuy can grant 10000 chips

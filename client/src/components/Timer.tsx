@@ -23,11 +23,11 @@ export function Timer({ remainingSeconds, paused }: TimerProps) {
         className={`font-mono font-extrabold leading-none tracking-tight ${color} ${
           paused ? "animate-pulse" : ""
         }`}
-        style={{ fontSize: "clamp(4rem, 11vw, 10rem)" }}
+        style={{ fontSize: "clamp(5rem, 13vw, 12rem)" }}
       >
         {formatClock(remainingSeconds)}
       </div>
-      <div className="mt-3 font-display text-xl font-medium uppercase tracking-[0.3em] text-gold/70 sm:text-2xl">
+      <div className="mt-3 font-display text-2xl font-medium uppercase tracking-[0.3em] text-gold/70 sm:text-3xl">
         {paused ? "Пауза" : danger ? "Финальная минута" : "До следующего уровня"}
       </div>
     </div>

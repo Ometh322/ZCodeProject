@@ -64,15 +64,15 @@ function CenterHeadline({
 }) {
   const isBreak = level?.isBreak ?? false;
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="font-display text-lg font-medium uppercase tracking-[0.35em] text-gold/80 sm:text-5xl">
-        Уровень {levelIndex + 1} 
+    <div className="flex flex-col items-center gap-5">
+      <div className="font-display text-2xl font-medium uppercase tracking-[0.35em] text-gold/80 sm:text-3xl">
+        Уровень {levelIndex + 1} / {totalLevels}
       </div>
       <div
         className={`text-center font-display font-semibold leading-none ${
           isBreak ? "text-gold-light" : "text-white"
         }`}
-        style={{ fontSize: "clamp(3.5rem, 9vw, 8rem)" }}
+        style={{ fontSize: "clamp(4rem, 11vw, 10rem)" }}
       >
         {level ? formatBlinds(level.smallBlind, level.bigBlind, level.isBreak) : "—"}
       </div>
@@ -92,9 +92,9 @@ function SidePanels({
 }) {
   const isBreak = level?.isBreak ?? false;
   return (
-    <div className="flex w-full flex-col gap-3">
+    <div className="flex w-full flex-col gap-4">
       <SidePanel label="Следующий уровень">
-        <span className="font-display text-10xl font-semibold text-white sm:text-3xl">
+        <span className="font-display text-3xl font-semibold text-white sm:text-4xl">
           {nextLevel
             ? formatBlinds(nextLevel.smallBlind, nextLevel.bigBlind, nextLevel.isBreak)
             : "Финал"}
@@ -103,7 +103,7 @@ function SidePanels({
 
       {secondsUntilBreak !== null && (
         <SidePanel label="Перерыв через">
-          <span className="font-mono text-2xl font-bold text-gold sm:text-3xl">
+          <span className="font-mono text-3xl font-bold text-gold sm:text-4xl">
             {formatClock(secondsUntilBreak)}
           </span>
         </SidePanel>
@@ -111,7 +111,7 @@ function SidePanels({
 
       {!isBreak && level && level.ante > 0 && (
         <SidePanel label="Анте">
-          <span className="font-mono text-2xl font-bold text-gold sm:text-3xl">
+          <span className="font-mono text-3xl font-bold text-gold sm:text-4xl">
             {formatChips(level.ante)}
           </span>
         </SidePanel>
@@ -128,11 +128,11 @@ function SidePanel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gold/30 bg-black/50 px-5 py-3 backdrop-blur-sm">
-      <div className="font-display text-xs font-medium uppercase tracking-[0.25em] text-gold/70">
+    <div className="rounded-xl border border-gold/30 bg-black/50 px-6 py-4 backdrop-blur-sm">
+      <div className="font-display text-sm font-medium uppercase tracking-[0.25em] text-gold/70 sm:text-base">
         {label}
       </div>
-      <div className="mt-1 text-right">{children}</div>
+      <div className="mt-1.5 text-right">{children}</div>
     </div>
   );
 }

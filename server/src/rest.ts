@@ -14,9 +14,11 @@ import {
   removePlayer,
   setBackgroundImage,
   setLogoImage,
+  setSoundAlert,
   updatePlayer,
   upsertTournament,
 } from "./repository.js";
+import type { SoundAlertType } from "./repository.js";
 
 /**
  * REST surface.
@@ -150,6 +152,46 @@ export function createApiRouter(engine: TimerEngine, upload: multer.Multer): Rou
     }
   });
 
+  // Custom alert sound upload — :type is one of "1min" / "10sec" / "level".
+  router.post(
+    "/tournament/sound/:type",
+    upload.single("audio"),
+    async (req, res) => {
+      const type = req.params.type as SoundAlertType;
+      if (!["1min", "10sec", "level"].includes(type)) {
+        res.status(400).json({ error: "Unknown sound type" });
+        return;
+      }
+      if (!req.file) {
+        res.status(400).json({ error: "Audio file required (field name: audio)" });
+        return;
+      }
+      const relativePath = `/uploads/${req.file.filename}`;
+      try {
+        await setSoundAlert(type, relativePath);
+        await engine.sync();
+        res.json({ type, path: relativePath });
+      } catch (err) {
+        res.status(500).json({ error: (err as Error).message });
+      }
+    },
+  );
+
+  router.delete("/tournament/sound/:type", async (req, res) => {
+    const type = req.params.type as SoundAlertType;
+    if (!["1min", "10sec", "level"].includes(type)) {
+      res.status(400).json({ error: "Unknown sound type" });
+      return;
+    }
+    try {
+      await setSoundAlert(type, null);
+      await engine.sync();
+      res.json({ type, path: null });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
   router.post("/tournament/players", async (req, res) => {
     const input = req.body as AddPlayerInput;
     if (!input?.name) {
@@ -272,10 +314,15 @@ export function createUploadMiddleware(uploadsDir: string): multer.Multer {
         cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
       },
     }),
-    limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB
+    limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB — images; audio is far smaller
     fileFilter: (_req, file, cb) => {
-      if (/^image\//.test(file.mimetype)) cb(null, true);
-      else cb(new Error("Только изображения (image/*)"));
+      // Accept both image uploads (background, logo) and audio uploads (alert
+      // sounds). Anything else is rejected with a clear error.
+      if (/^image\//.test(file.mimetype) || /^audio\//.test(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error("Только изображения (image/*) или аудио (audio/*)"));
+      }
     },
   });
 }

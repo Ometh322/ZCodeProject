@@ -161,6 +161,29 @@ export function AdminPage() {
     }
   }
 
+  async function handleSoundUpload(
+    type: "1min" | "10sec" | "level",
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await api.uploadSound(type, file);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    } finally {
+      e.target.value = "";
+    }
+  }
+
+  async function handleClearSound(type: "1min" | "10sec" | "level") {
+    try {
+      await api.clearSound(type);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   if (!state) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-xl text-slate-400">
@@ -384,6 +407,35 @@ export function AdminPage() {
         </div>
       </section>
 
+      {/* Sound alerts */}
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <h2 className="mb-1 text-xl font-bold">Звуковые сигналы</h2>
+        <p className="mb-4 text-xs text-slate-500">
+          Загрузите свои звуки или оставьте пустым для синтезированного сигнала
+          по умолчанию.
+        </p>
+        <div className="space-y-3">
+          <SoundRow
+            label="За 1 минуту до уровня"
+            current={state.soundAlert1Min}
+            onUpload={(e) => handleSoundUpload("1min", e)}
+            onClear={() => handleClearSound("1min")}
+          />
+          <SoundRow
+            label="За 10 секунд до уровня"
+            current={state.soundAlert10Sec}
+            onUpload={(e) => handleSoundUpload("10sec", e)}
+            onClear={() => handleClearSound("10sec")}
+          />
+          <SoundRow
+            label="Начало нового уровня"
+            current={state.soundAlertLevel}
+            onUpload={(e) => handleSoundUpload("level", e)}
+            onClear={() => handleClearSound("level")}
+          />
+        </div>
+      </section>
+
       <LevelEditor
         presets={presets}
         currentLevels={state.levels}
@@ -457,5 +509,41 @@ function NumCell({
       onChange={(e) => onChange(e.target.value)}
       className="w-full max-w-[8rem] rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-white outline-none focus:border-gold"
     />
+  );
+}
+
+/** One row of the sound alerts section: label + upload + optional clear. */
+function SoundRow({
+  label,
+  current,
+  onUpload,
+  onClear,
+}: {
+  label: string;
+  current: string | null;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <span className="w-56 shrink-0 text-sm text-slate-300">{label}</span>
+      <input
+        type="file"
+        accept="audio/*"
+        onChange={onUpload}
+        className="text-sm text-slate-300 file:mr-3 file:rounded file:border-0 file:bg-gold file:px-3 file:py-1.5 file:font-semibold file:text-black hover:file:brightness-110"
+      />
+      <span className="text-xs text-slate-500">
+        {current ? "загружен" : "по умолчанию"}
+      </span>
+      {current && (
+        <button
+          onClick={onClear}
+          className="rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-xs text-red-300 hover:bg-red-500/20"
+        >
+          Сбросить
+        </button>
+      )}
+    </div>
   );
 }

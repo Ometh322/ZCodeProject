@@ -29,6 +29,11 @@ model Tournament {
   backgroundImage String?
   // Club logo image (relative URL), shown as the emblem on the display screen.
   logoImage       String?
+  // Optional custom sound files for the display-screen alerts. When null the
+  // client falls back to a synthesized Web Audio tone for that alert.
+  soundAlert1Min  String?
+  soundAlert10Sec String?
+  soundAlertLevel String?
 
   // Four purchase types, each split into chips (added to a player's stack) and
   // cost (added to a player's paidAmount). Keeping them separate lets a rebuy

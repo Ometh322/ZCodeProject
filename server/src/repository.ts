@@ -17,13 +17,25 @@ import { getPresetLevels } from "@poker-club/shared";
  * that invariant and always target the first non-finished tournament found.
  */
 
+/**
+ * Statuses a tournament can be in while still being "visible" — i.e. returned
+ * to the display/admin UIs. Includes "finished" so a completed tournament can
+ * still be rendered (the display shows its final state) and reset by an admin.
+ *
+ * Contrast with ACTIVE_STATUS below, which excludes "finished" because
+ * mutations like adding players or rebuys are not meaningful for a finished
+ * tournament.
+ */
+const VISIBLE_STATUS = ["setup", "running", "paused", "finished"];
+
+/** Statuses under which a tournament accepts mutations. Excludes "finished". */
 const ACTIVE_STATUS = ["setup", "running", "paused"];
 
 export async function getActiveTournament(): Promise<{
   id: string;
 } | null> {
   const t = await prisma.tournament.findFirst({
-    where: { status: { in: ACTIVE_STATUS } },
+    where: { status: { in: VISIBLE_STATUS } },
     orderBy: { createdAt: "desc" },
     select: { id: true },
   });
@@ -60,7 +72,7 @@ function computePaidAmount(
 /** Loads the active tournament together with its levels/players into a wire snapshot. */
 export async function loadState(): Promise<TournamentState | null> {
   const t = await prisma.tournament.findFirst({
-    where: { status: { in: ACTIVE_STATUS } },
+    where: { status: { in: VISIBLE_STATUS } },
     orderBy: { createdAt: "desc" },
     include: {
       levels: { orderBy: { order: "asc" } },
@@ -109,6 +121,9 @@ export async function loadState(): Promise<TournamentState | null> {
     startedAt: t.startedAt?.toISOString() ?? null,
     backgroundImage: t.backgroundImage,
     logoImage: t.logoImage,
+    soundAlert1Min: t.soundAlert1Min,
+    soundAlert10Sec: t.soundAlert10Sec,
+    soundAlertLevel: t.soundAlertLevel,
     buyInChips: t.buyInChips,
     buyInCost: t.buyInCost,
     rebuyChips: t.rebuyChips,
@@ -480,6 +495,35 @@ export async function setLogoImage(relativePath: string | null): Promise<Tournam
   await prisma.tournament.update({
     where: { id: t.id },
     data: { logoImage: relativePath },
+  });
+  const state = await loadState();
+  if (!state) throw new Error("Failed to load state");
+  return state;
+}
+
+/** Alert type → Prisma column mapping for setSoundAlert. */
+const SOUND_ALERT_COLUMNS = {
+  "1min": "soundAlert1Min",
+  "10sec": "soundAlert10Sec",
+  level: "soundAlertLevel",
+} as const;
+
+export type SoundAlertType = keyof typeof SOUND_ALERT_COLUMNS;
+
+/**
+ * Sets or clears one of the three custom alert sound files on the active
+ * tournament. `type` is one of "1min" / "10sec" / "level".
+ */
+export async function setSoundAlert(
+  type: SoundAlertType,
+  relativePath: string | null,
+): Promise<TournamentState> {
+  const column = SOUND_ALERT_COLUMNS[type];
+  const t = await getActiveTournament();
+  if (!t) throw new Error("No active tournament");
+  await prisma.tournament.update({
+    where: { id: t.id },
+    data: { [column]: relativePath },
   });
   const state = await loadState();
   if (!state) throw new Error("Failed to load state");

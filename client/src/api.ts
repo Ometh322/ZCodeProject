@@ -170,4 +170,36 @@ export const api = {
       headers: authHeaders(),
     });
   },
+
+  /** Uploads a custom alert sound. type is "1min" | "10sec" | "level". */
+  async uploadSound(
+    type: "1min" | "10sec" | "level",
+    file: File,
+  ): Promise<{ type: string; path: string }> {
+    const form = new FormData();
+    form.append("audio", file);
+    const res = await fetch(`${BASE}/api/tournament/sound/${type}`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: form,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(body.error ?? `Upload failed: ${res.status}`);
+    }
+    return res.json();
+  },
+
+  /** Clears a custom alert sound (falls back to synthesized tone). */
+  clearSound(
+    type: "1min" | "10sec" | "level",
+  ): Promise<{ type: string; path: null }> {
+    return request<{ type: string; path: null }>(
+      `/api/tournament/sound/${type}`,
+      {
+        method: "DELETE",
+        headers: authHeaders(),
+      },
+    );
+  },
 };

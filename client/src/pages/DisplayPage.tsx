@@ -1,4 +1,5 @@
 import { useTournamentState } from "../useTournamentState";
+import { useTournamentAlerts } from "../hooks/useTournamentAlerts";
 import { Timer } from "../components/Timer";
 import { BlindsCard } from "../components/BlindsCard";
 import { StatsBar } from "../components/StatsBar";
@@ -30,6 +31,7 @@ import { secondsUntilNextBreak } from "../format";
  */
 export function DisplayPage() {
   const { state, connected } = useTournamentState(false);
+  const alerts = useTournamentAlerts(state);
 
   if (!state) {
     return (
@@ -65,6 +67,8 @@ export function DisplayPage() {
       )}
 
       <ConnectionDot connected={connected} />
+
+      <SoundToggle enabled={alerts.enabled} onEnable={alerts.enable} />
 
       {/* Header strip: tournament name centered, full width. */}
       <header className="flex shrink-0 items-center justify-center px-6 pt-5 pb-2">
@@ -157,5 +161,38 @@ function ConnectionDot({ connected }: { connected: boolean }) {
       />
       {connected ? "В сети" : "Нет связи"}
     </div>
+  );
+}
+
+/**
+ * Sound enable toggle. Until the operator clicks it (a user gesture), the
+ * browser blocks all audio. After the click the AudioContext is unlocked for
+ * the rest of the tab session. Rendered top-left so it doesn't fight the
+ * connection dot top-right.
+ */
+function SoundToggle({
+  enabled,
+  onEnable,
+}: {
+  enabled: boolean;
+  onEnable: () => void;
+}) {
+  return (
+    <button
+      onClick={onEnable}
+      disabled={enabled}
+      className={`fixed left-6 top-6 z-20 rounded-lg border px-4 py-2 text-sm font-medium transition ${
+        enabled
+          ? "cursor-default border-gold/40 bg-black/40 text-gold/70"
+          : "animate-pulse border-gold bg-gold/20 text-gold hover:bg-gold/30"
+      }`}
+      title={
+        enabled
+          ? "Звуковые сигналы включены"
+          : "Нажмите, чтобы включить звуковые сигналы"
+      }
+    >
+      {enabled ? "🔊 Звук вкл" : "🔊 Включить звук"}
+    </button>
   );
 }

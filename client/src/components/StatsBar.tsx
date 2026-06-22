@@ -72,11 +72,11 @@ function Stat({
   accent?: string;
 }) {
   return (
-    <div className="rounded-xl border border-gold/25 bg-black/60 px-5 py-3 backdrop-blur-sm">
-      <div className="font-display text-xs font-medium uppercase tracking-[0.2em] text-gold/70">
+    <div className="rounded-xl border border-gold/25 bg-black/60 px-6 py-4 backdrop-blur-sm">
+      <div className="font-display text-sm font-medium uppercase tracking-[0.2em] text-gold/70 sm:text-base">
         {label}
       </div>
-      <div className={`mt-0.5 font-mono text-2xl font-bold ${accent} sm:text-3xl`}>
+      <div className={`mt-1 font-mono text-3xl font-bold ${accent} sm:text-4xl`}>
         {value}
       </div>
     </div>
