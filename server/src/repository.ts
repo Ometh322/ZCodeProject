@@ -309,10 +309,10 @@ export async function updatePlayer(
   // Elimination rank: assigned server-side on the false→true transition.
   // 1 = first out, N = last out. Cleared when a player is restored.
   if (patch.eliminated === true && !player.eliminated) {
-    const eliminatedCount = await prisma.player.count({
-      where: { tournamentId: player.tournamentId, eliminated: true },
+    const aliveCount = await prisma.player.count({
+      where: { tournamentId: player.tournamentId, eliminated: false },
     });
-    data.eliminationOrder = eliminatedCount + 1;
+    data.eliminationOrder = aliveCount;
   } else if (patch.eliminated === false && player.eliminated) {
     data.eliminationOrder = null;
   }
