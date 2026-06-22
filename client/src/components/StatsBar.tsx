@@ -6,45 +6,36 @@ interface StatsBarProps {
 }
 
 /**
- * The strip of secondary stats under the timer.
+ * Secondary stats for the display screen.
  *
  *   - Средний стек: totalChips (derived from live stacks) / players still in.
  *   - В игре: remaining / total players.
  *   - Призовой фонд: sum of every player's paidAmount (buy-in + rebuys + addons).
- *   - Ребай-мастер: player with the most rebuys this tournament (hidden if none).
+ *   - Шейх дня / Статус: player with the most rebuys, or the tournament status.
  *
- * All values come straight from the server's `state:full` snapshot, so they
- * stay in sync across every screen the moment an admin makes a change.
+ * Rendered as a vertical stack of cards — it lives in the left rail of the
+ * three-column display, so each stat gets its own full-width row.
  */
 export function StatsBar({ state }: StatsBarProps) {
   const playersRemaining = state.players.filter((p) => !p.eliminated).length;
   const totalPlayers = state.players.length;
   const averageStack =
     playersRemaining > 0 ? Math.round(state.totalChips / playersRemaining) : 0;
-
   const prizePool = state.players.reduce((sum, p) => sum + p.paidAmount, 0);
 
-  // Rebuy master: the player with the highest rebuyCount. Only shown when at
-  // least one rebuy has been taken in the tournament.
   const rebuyMaster = [...state.players]
     .filter((p) => p.rebuyCount > 0)
     .sort((a, b) => b.rebuyCount - a.rebuyCount)[0];
 
-  const showRebuyMaster = Boolean(rebuyMaster);
-
   return (
-    <div className="grid w-full grid-cols-2 gap-6 sm:grid-cols-4">
+    <div className="flex w-full flex-col gap-3">
       <Stat label="Средний стек" value={formatChips(averageStack)} />
       <Stat label="В игре" value={`${playersRemaining} / ${totalPlayers}`} />
-      <Stat
-        label="Фишек в игре"
-        value={formatChips(prizePool)}
-        accent="text-gold"
-      />
-      {showRebuyMaster ? (
+      <Stat label="Призовой фонд" value={formatChips(prizePool)} accent="text-gold" />
+      {rebuyMaster ? (
         <Stat
-          label={`Шейх дня · ${rebuyMaster!.rebuyCount + rebuyMaster!.doubleRebuyCount * 2}`}
-          value={rebuyMaster!.name}
+          label={`Шейх дня · ${rebuyMaster.rebuyCount + rebuyMaster.doubleRebuyCount * 2}`}
+          value={rebuyMaster.name}
           accent="text-gold-light"
         />
       ) : (
@@ -81,11 +72,13 @@ function Stat({
   accent?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-gold/25 bg-black/60 px-6 py-4 text-center backdrop-blur-sm">
-      <div className="text-xs font-semibold uppercase tracking-widest text-gold/70">
+    <div className="rounded-xl border border-gold/25 bg-black/60 px-5 py-3 backdrop-blur-sm">
+      <div className="font-display text-xs font-medium uppercase tracking-[0.2em] text-gold/70">
         {label}
       </div>
-      <div className={`mt-1 text-3xl font-bold ${accent}`}>{value}</div>
+      <div className={`mt-0.5 font-mono text-2xl font-bold ${accent} sm:text-3xl`}>
+        {value}
+      </div>
     </div>
   );
 }

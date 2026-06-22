@@ -6,8 +6,10 @@ export default {
       fontFamily: {
         // Numeric/tabular font for the timer and chip counts.
         mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "monospace"],
-        // Decorative serif for the club emblem and major headings.
-        display: ['"Cinzel"', "Georgia", "serif"],
+        // Antiqua serif for the club emblem and headings: Cormorant Garamond is
+        // a refined, slightly condensed serif with delicate decorative serifs
+        // and moderate stroke contrast — in the spirit of expensive venues.
+        display: ['"Cormorant Garamond"', "Georgia", "serif"],
       },
       colors: {
         // Black-and-gold theme. The legacy `felt` token is repurposed as the

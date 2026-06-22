@@ -8,12 +8,23 @@ interface BlindsCardProps {
   nextLevel: Level | undefined;
   /** Seconds until the next scheduled break, or null if none remains. */
   secondsUntilBreak: number | null;
+  /**
+   * Where this card is rendered on the display screen:
+   *   - "center": the big blinds headline + level counter (central column).
+   *   - "side":   the next-level / break / ante panels stacked vertically
+   *               (right column). Used in the three-column display layout.
+   * Defaults to "center" for backwards compatibility.
+   */
+  layout?: "center" | "side";
 }
 
 /**
- * Shows the active level's blinds (huge) with two side-by-side panels:
- * the upcoming level, and a countdown to the next scheduled break.
- * Themed in the black-and-gold Poker Lounge palette.
+ * Renders the active level information for the display screen.
+ *
+ * In the three-column layout this component is mounted twice: once as the big
+ * headline (`layout="center"`) and once as the side rail of upcoming-level /
+ * break / ante panels (`layout="side"`). Both share the level data, they just
+ * project different slices of it.
  */
 export function BlindsCard({
   level,
@@ -21,54 +32,107 @@ export function BlindsCard({
   totalLevels,
   nextLevel,
   secondsUntilBreak,
+  layout = "center",
 }: BlindsCardProps) {
-  const isBreak = level?.isBreak ?? false;
-
+  if (layout === "side") {
+    return (
+      <SidePanels
+        level={level}
+        nextLevel={nextLevel}
+        secondsUntilBreak={secondsUntilBreak}
+      />
+    );
+  }
   return (
-    <div className="flex w-full flex-col items-center gap-6">
-      <div className="text-sm font-semibold uppercase tracking-[0.3em] text-gold/80">
+    <CenterHeadline
+      level={level}
+      levelIndex={levelIndex}
+      totalLevels={totalLevels}
+    />
+  );
+}
+
+/** Central headline: the active level's blinds, very large. */
+function CenterHeadline({
+  level,
+  levelIndex,
+  totalLevels,
+}: {
+  level: Level | undefined;
+  levelIndex: number;
+  totalLevels: number;
+}) {
+  const isBreak = level?.isBreak ?? false;
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <div className="font-display text-lg font-medium uppercase tracking-[0.35em] text-gold/80 sm:text-xl">
         Уровень {levelIndex + 1} / {totalLevels}
       </div>
-
       <div
-        className={`text-center font-extrabold leading-none ${
+        className={`text-center font-display font-semibold leading-none ${
           isBreak ? "text-gold-light" : "text-white"
         }`}
-        style={{ fontSize: "clamp(4rem, 12vw, 10rem)" }}
+        style={{ fontSize: "clamp(3.5rem, 9vw, 8rem)" }}
       >
         {level ? formatBlinds(level.smallBlind, level.bigBlind, level.isBreak) : "—"}
       </div>
+    </div>
+  );
+}
 
-      {!isBreak && level && level.ante > 0 && (
-        <div className="text-2xl font-semibold text-slate-300">
-          Анте: <span className="text-gold">{formatChips(level.ante)}</span>
-        </div>
+/** Right-rail panels: next level, time until break, ante — stacked vertically. */
+function SidePanels({
+  level,
+  nextLevel,
+  secondsUntilBreak,
+}: {
+  level: Level | undefined;
+  nextLevel: Level | undefined;
+  secondsUntilBreak: number | null;
+}) {
+  const isBreak = level?.isBreak ?? false;
+  return (
+    <div className="flex w-full flex-col gap-3">
+      <SidePanel label="Следующий уровень">
+        <span className="font-display text-2xl font-semibold text-white sm:text-3xl">
+          {nextLevel
+            ? formatBlinds(nextLevel.smallBlind, nextLevel.bigBlind, nextLevel.isBreak)
+            : "Финал"}
+        </span>
+      </SidePanel>
+
+      {secondsUntilBreak !== null && (
+        <SidePanel label="Перерыв через">
+          <span className="font-mono text-2xl font-bold text-gold sm:text-3xl">
+            {formatClock(secondsUntilBreak)}
+          </span>
+        </SidePanel>
       )}
 
-      {/* Two side-by-side panels: next level + time until break. */}
-      <div className="mt-2 flex w-full flex-wrap justify-center gap-4">
-        <div className="min-w-[14rem] rounded-xl border border-gold/30 bg-black/50 px-8 py-3 text-center backdrop-blur-sm">
-          <div className="text-xs font-semibold uppercase tracking-widest text-gold/70">
-            Следующий уровень
-          </div>
-          <div className="mt-1 text-3xl font-bold text-white">
-            {nextLevel
-              ? formatBlinds(nextLevel.smallBlind, nextLevel.bigBlind, nextLevel.isBreak)
-              : "Финал"}
-          </div>
-        </div>
+      {!isBreak && level && level.ante > 0 && (
+        <SidePanel label="Анте">
+          <span className="font-mono text-2xl font-bold text-gold sm:text-3xl">
+            {formatChips(level.ante)}
+          </span>
+        </SidePanel>
+      )}
+    </div>
+  );
+}
 
-        {secondsUntilBreak !== null && (
-          <div className="min-w-[14rem] rounded-xl border border-gold/30 bg-black/50 px-8 py-3 text-center backdrop-blur-sm">
-            <div className="text-xs font-semibold uppercase tracking-widest text-gold/70">
-              Перерыв через
-            </div>
-            <div className="mt-1 font-mono text-3xl font-bold text-gold">
-              {formatClock(secondsUntilBreak)}
-            </div>
-          </div>
-        )}
+function SidePanel({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-gold/30 bg-black/50 px-5 py-3 backdrop-blur-sm">
+      <div className="font-display text-xs font-medium uppercase tracking-[0.25em] text-gold/70">
+        {label}
       </div>
+      <div className="mt-1 text-right">{children}</div>
     </div>
   );
 }
