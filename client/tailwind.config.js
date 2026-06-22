@@ -4,32 +4,45 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // Numeric/tabular font for the timer and chip counts.
+        // High-contrast antiqua for the tournament name + hero headings
+        // (the "luxury display" face). Used sparingly — only on the biggest
+        // text on screen.
+        display: ['"Playfair Display"', "Georgia", "serif"],
+        // Condensed uppercase sans-serif for section labels: BLINDS, TIME,
+        // PRIZE, СЛЕДУЮЩИЙ УРОВЕНЬ etc. Gives the structured, formal look of
+        // a casino/board layout without competing with the headline serif.
+        heading: ['"Oswald"', '"Arial Narrow"', "sans-serif"],
+        // Geometric sans for all numbers: timer, blinds, chip counts, prize
+        // pool. Montserrat has clean tabular figures and looks modern-premium
+        // at large sizes. The body/sans fallback is also Montserrat.
+        sans: ['"Montserrat"', "Inter", "system-ui", "sans-serif"],
+        numeric: ['"Montserrat"', '"JetBrains Mono"', "monospace"],
+        // Kept for any legacy `font-mono` usage (admin code etc.).
         mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "monospace"],
-        // Antiqua serif for the club emblem and headings: Cormorant Garamond is
-        // a refined, slightly condensed serif with delicate decorative serifs
-        // and moderate stroke contrast — in the spirit of expensive venues.
-        display: ['"Cormorant Garamond"', "Georgia", "serif"],
       },
       colors: {
-        // Black-and-gold theme. The legacy `felt` token is repurposed as the
-        // black background scale (kept under the same name so existing
-        // `bg-felt` / `bg-felt-dark` utilities continue to work).
+        // Charcoal (not pure black) — gold reads richer on #14141A than on
+        // #000 and is gentler on the eyes in a dim club. `felt` is kept as the
+        // token name so existing bg-felt utilities keep working.
         felt: {
-          DEFAULT: "#0a0a0a",
-          dark: "#000000",
-          light: "#161616",
+          DEFAULT: "#14141A",
+          dark: "#0B0B10",
+          light: "#1E1E26",
         },
         gold: {
-          DEFAULT: "#d4af37",
-          light: "#f5c518",
-          dark: "#a8862e",
+          DEFAULT: "#D4AF37",
+          light: "#F5C518",
+          dark: "#A8862E",
         },
       },
       backgroundImage: {
-        // A subtle gold sheen used on hero elements (emblem, prize pool).
+        // Diagonal gold sheen for the tournament name + hero accents.
         "gold-gradient":
-          "linear-gradient(135deg, #a8862e 0%, #f5c518 45%, #d4af37 60%, #a8862e 100%)",
+          "linear-gradient(135deg, #A8862E 0%, #F5C518 45%, #D4AF37 60%, #A8862E 100%)",
+      },
+      // Soft gold glow used as text-shadow / box-shadow on hero elements.
+      boxShadow: {
+        "gold-glow": "0 0 24px rgba(212, 175, 55, 0.35)",
       },
     },
   },

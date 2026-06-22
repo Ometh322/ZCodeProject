@@ -5,16 +5,58 @@
 @layer base {
   body {
     @apply font-sans text-slate-100 antialiased;
-    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    /* Montserrat is the default UI face (see tailwind.config.js → font-sans). */
+    font-family: "Montserrat", "Inter", ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Display-screen typography utilities                                         */
+/*                                                                            */
+/* These implement the four design rules for the black-and-gold look:         */
+/*   1. Tabular figures everywhere numbers are shown (timer, blinds, money)   */
+/*      so digits don't shift width while counting down.                      */
+/*   2. Gold used ONLY on accents — headline, timer, prize pool — never on    */
+/*      the whole screen. Body copy stays light grey / white.                 */
+/*   3. A subtle gold glow (text-shadow) on hero text; restrained so it never */
+/*      blurs into a blob.                                                    */
+/*   4. The headline gold is a gradient clipped to the text, not a flat fill, */
+/*      which reads far richer on a dark background.                          */
+/* -------------------------------------------------------------------------- */
+
+@layer utilities {
+  /* Tabular numbers — widths are fixed so 09 → 10 doesn't jump. */
+  .nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Gold gradient clipped to text. Apply on an element whose color we want   */
+  /* to become the diagonal gold sheen. Use alongside a transparent fallback. */
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #a8862e 0%, #f5c518 45%, #d4af37 60%, #a8862e 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* Restrained gold glow for hero text. Stack two soft shadows so the halo   */
+  /* is visible without making the glyph edges bleed. */
+  .glow-gold {
+    text-shadow:
+      0 0 18px rgba(212, 175, 55, 0.35),
+      0 1px 2px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Even softer glow for secondary gold accents (captions, stat values). */
+  .glow-gold-soft {
+    text-shadow: 0 0 12px rgba(212, 175, 55, 0.22);
   }
 }
 
 /* The display page is meant for a TV/projector in the room: hide the cursor
    after a moment of inactivity so it doesn't sit on screen during a tournament. */
-@media (display-none-cursor) {
-  /* Reserved for future custom property usage. */
-}
-
 .idle-cursor-none {
   cursor: none;
 }
