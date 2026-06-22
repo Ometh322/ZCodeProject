@@ -65,8 +65,8 @@ function CenterHeadline({
   const isBreak = level?.isBreak ?? false;
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="font-display text-lg font-medium uppercase tracking-[0.35em] text-gold/80 sm:text-xl">
-        Уровень {levelIndex + 1} / {totalLevels}
+      <div className="font-display text-lg font-medium uppercase tracking-[0.35em] text-gold/80 sm:text-5xl">
+        Уровень {levelIndex + 1} 
       </div>
       <div
         className={`text-center font-display font-semibold leading-none ${
@@ -94,7 +94,7 @@ function SidePanels({
   return (
     <div className="flex w-full flex-col gap-3">
       <SidePanel label="Следующий уровень">
-        <span className="font-display text-2xl font-semibold text-white sm:text-3xl">
+        <span className="font-display text-10xl font-semibold text-white sm:text-3xl">
           {nextLevel
             ? formatBlinds(nextLevel.smallBlind, nextLevel.bigBlind, nextLevel.isBreak)
             : "Финал"}

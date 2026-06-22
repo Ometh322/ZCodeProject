@@ -67,17 +67,21 @@ export function DisplayPage() {
       <ConnectionDot connected={connected} />
 
       {/* Header strip: tournament name centered, full width. */}
-      <header className="flex shrink-0 items-center justify-center px-6 pt-5 pb-3">
-        <h1 className="text-center font-display text-3xl font-semibold tracking-[0.15em] text-gold drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-4xl lg:text-5xl">
+      <header className="flex shrink-0 items-center justify-center px-6 pt-5 pb-2">
+        <h1 className="text-center font-display text-6xl font-semibold tracking-[0.15em] text-gold drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-7xl lg:text-8xl">
           {state.name}
         </h1>
       </header>
 
+      {/* Club emblem centered between the header and the three-column grid. */}
+      <div className="flex shrink-0 justify-center pb-4">
+        <ClubEmblem logoUrl={state.logoImage ?? undefined} />
+      </div>
+
       {/* Three-column body: fills the remaining viewport height. */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-6 pb-6 lg:grid-cols-[minmax(16rem,1fr)_minmax(0,3fr)_minmax(16rem,1fr)]">
-        {/* Left column: emblem + vertical stats. */}
-        <aside className="flex min-h-0 flex-col items-center justify-between gap-6 lg:items-stretch">
-          <ClubEmblem logoUrl={state.logoImage ?? undefined} />
+        {/* Left column: vertical stats only (emblem moved above the grid). */}
+        <aside className="flex min-h-0 flex-col items-center justify-center gap-6 lg:items-stretch">
           <StatsBar state={state} />
         </aside>
 
@@ -121,20 +125,20 @@ function ClubEmblem({ logoUrl }: { logoUrl?: string }) {
       <img
         src={logoUrl}
         alt="Poker Lounge"
-        className="h-24 w-24 rounded-full object-cover shadow-[0_0_0_2px_rgba(212,175,55,0.7),0_4px_20px_rgba(0,0,0,0.6)] sm:h-28 sm:w-28 lg:h-32 lg:w-32"
+        className="h-48 w-48 rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_20px_rgba(0,0,0,0.6)] sm:h-56 sm:w-56 lg:h-64 lg:w-64"
       />
     );
   }
   return (
-    <div className="flex flex-col items-center">
-      <div className="flex items-center gap-3 text-gold">
-        <span className="text-2xl sm:text-3xl">♠</span>
-        <span className="font-display text-xl font-semibold tracking-[0.2em] text-gold sm:text-2xl lg:text-3xl">
+      <div className="flex flex-col items-center">
+      <div className="flex items-center gap-6 text-gold">
+        <span className="text-4xl sm:text-5xl">♠</span>
+        <span className="font-display text-4xl font-semibold tracking-[0.2em] text-gold sm:text-5xl lg:text-6xl">
           POKER&nbsp;LOUNGE
         </span>
-        <span className="text-2xl sm:text-3xl">♣</span>
+        <span className="text-4xl sm:text-5xl">♣</span>
       </div>
-      <div className="mt-1 h-px w-48 bg-gradient-to-r from-transparent via-gold/60 to-transparent sm:w-56" />
+      <div className="mt-2 h-px w-96 bg-gradient-to-r from-transparent via-gold/60 to-transparent sm:w-[28rem]" />
     </div>
   );
 }

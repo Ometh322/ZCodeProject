@@ -21,7 +21,7 @@ export function StatsBar({ state }: StatsBarProps) {
   const totalPlayers = state.players.length;
   const averageStack =
     playersRemaining > 0 ? Math.round(state.totalChips / playersRemaining) : 0;
-  const prizePool = state.players.reduce((sum, p) => sum + p.paidAmount, 0);
+  const prizePool = state.totalChips;
 
   const rebuyMaster = [...state.players]
     .filter((p) => p.rebuyCount > 0)
@@ -31,7 +31,7 @@ export function StatsBar({ state }: StatsBarProps) {
     <div className="flex w-full flex-col gap-3">
       <Stat label="Средний стек" value={formatChips(averageStack)} />
       <Stat label="В игре" value={`${playersRemaining} / ${totalPlayers}`} />
-      <Stat label="Призовой фонд" value={formatChips(prizePool)} accent="text-gold" />
+      <Stat label="Всего фишек" value={formatChips(prizePool)} accent="text-gold" />
       {rebuyMaster ? (
         <Stat
           label={`Шейх дня · ${rebuyMaster.rebuyCount + rebuyMaster.doubleRebuyCount * 2}`}
