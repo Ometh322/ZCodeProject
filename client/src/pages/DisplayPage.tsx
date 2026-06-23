@@ -10,19 +10,21 @@ import { secondsUntilNextBreak } from "../format";
  * in the club room. Read-only: it never emits control events, only renders
  * whatever the server pushes.
  *
- * The layout is a full-bleed three-column grid that fills the whole viewport
- * so every element stays readable on a large screen from across the room:
+ * The layout is a full-bleed three-column grid that fills the whole viewport.
+ * The center column owns the full vertical story — name → emblem → level →
+ * timer — with one uniform gap so the emblem sits equidistant between the name
+ * above it and the "Уровень" label below it:
  *
  *   ┌──────────────────────────────────────────────────────────┐
- *   │                 ИМЯ ТУРНИРА              [● в сети]       │  header strip
+ *   │  [● в сети]                            [🔊 Звук]          │
  *   ├──────────┬──────────────────────────┬────────────────────┤
- *   │ ЭМБЛЕМА  │       100 / 200          │  СЛЕД. УРОВЕНЬ     │
- *   │          │                          │  150 / 300         │
- *   │ Средний  │      ┌─────────┐         │                    │
- *   │ стек     │      │  14:23  │         │  ПЕРЕРЫВ ЧЕРЕЗ     │
- *   │ В игре   │      └─────────┘         │     45:00          │
- *   │ Призовой │                          │                    │
- *   │ фонд     │                          │  АНТЕ: 200         │
+ *   │          │       ИМЯ ТУРНИРА        │  СЛЕДУЮЩИЙ УРОВЕНЬ │
+ *   │ Средний  │                          │  150 / 300         │
+ *   │ стек     │        [ ЭМБЛЕМА ]       │                    │
+ *   │ В игре   │                          │  ПЕРЕРЫВ ЧЕРЕЗ     │
+ *   │ Призовой │       100 / 200          │     45:00          │
+ *   │ фонд     │      ┌─────────┐         │                    │
+ *   │          │      │  14:23  │         │  АНТЕ: 200         │
  *   └──────────┴──────────────────────────┴────────────────────┘
  *      left            center                    right
  *
@@ -74,28 +76,27 @@ export function DisplayPage() {
 
       <SoundToggle enabled={alerts.enabled} onEnable={alerts.enable} />
 
-      {/* Header strip: tournament name centered, full width. Playfair Display
-          Bold with a gold gradient clipped to the text + a restrained glow. */}
-      <header className="flex shrink-0 items-center justify-center px-6 pt-6 pb-3">
-        <h1 className="text-gold-gradient glow-gold text-center font-display text-5xl font-bold tracking-[0.08em] sm:text-6xl lg:text-7xl">
-          {state.name}
-        </h1>
-      </header>
-
-      {/* Club emblem centered between the header and the three-column grid. */}
-      <div className="flex shrink-0 justify-center pb-4">
-        <ClubEmblem logoUrl={state.logoImage ?? undefined} />
-      </div>
-
-      {/* Three-column body: fills the remaining viewport height. */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-6 pb-6 lg:grid-cols-[minmax(16rem,1fr)_minmax(0,3fr)_minmax(16rem,1fr)]">
-        {/* Left column: vertical stats only (emblem moved above the grid). */}
+      {/* Three-column body: fills the whole viewport. The center column owns
+          the full vertical stack — name → emblem → level → timer — with one
+          uniform gap so the emblem sits equidistant between the name above it
+          and the "Уровень" label below it. */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-6 py-6 lg:grid-cols-[minmax(16rem,1fr)_minmax(0,3fr)_minmax(16rem,1fr)]">
+        {/* Left column: vertical stats. */}
         <aside className="flex min-h-0 flex-col items-center justify-center gap-6 lg:items-stretch">
           <StatsBar state={state} />
         </aside>
 
-        {/* Center column: blinds (top) + timer (bottom), filling vertical space. */}
+        {/* Center column: the whole vertical story, one gap controls spacing. */}
         <main className="flex min-h-0 flex-col items-center justify-center gap-6">
+          {/* Tournament name (Playfair Display Bold, gold gradient). */}
+          <h1 className="text-gold-gradient glow-gold text-center font-display text-4xl font-bold tracking-[0.08em] sm:text-5xl lg:text-6xl">
+            {state.name}
+          </h1>
+
+          {/* Club emblem — equidistant from the name above and the level below
+              because all three share the same gap-6 on this flex column. */}
+          <ClubEmblem logoUrl={state.logoImage ?? undefined} />
+
           <BlindsCard
             level={currentLevel}
             levelIndex={state.currentLevelIndex}
@@ -134,7 +135,7 @@ function ClubEmblem({ logoUrl }: { logoUrl?: string }) {
       <img
         src={logoUrl}
         alt="Poker Lounge"
-        className="h-40 w-40 rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_24px_rgba(0,0,0,0.6)] sm:h-48 sm:w-48 lg:h-56 lg:w-56"
+        className="h-28 w-28 rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_24px_rgba(0,0,0,0.6)] sm:h-32 sm:w-32 lg:h-36 lg:w-36"
       />
     );
   }

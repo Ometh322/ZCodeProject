@@ -70,7 +70,7 @@ function CenterHeadline({
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
-        Level {levelIndex + 1} <span className="text-gold/40">/</span> {totalLevels}
+        Уровень {levelIndex + 1} <span className="text-gold/40">/</span> {totalLevels}
       </div>
       <div
         className={`nums font-numeric font-extrabold leading-none ${
