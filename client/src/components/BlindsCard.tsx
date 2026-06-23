@@ -25,6 +25,10 @@ interface BlindsCardProps {
  * headline (`layout="center"`) and once as the side rail of upcoming-level /
  * break / ante panels (`layout="side"`). Both share the level data, they just
  * project different slices of it.
+ *
+ * Typography follows the black-and-gold system: Oswald for the uppercase
+ * labels, Montserrat ExtraBold with tabular-nums for all numbers, gold kept
+ * for accents (current level, ante) while secondary info is light grey/white.
  */
 export function BlindsCard({
   level,
@@ -64,13 +68,13 @@ function CenterHeadline({
 }) {
   const isBreak = level?.isBreak ?? false;
   return (
-    <div className="flex flex-col items-center gap-5">
-      <div className="font-display text-2xl font-medium uppercase tracking-[0.35em] text-gold/80 sm:text-3xl">
-        Уровень {levelIndex + 1}
+    <div className="flex flex-col items-center gap-4">
+      <div className="font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
+        Level {levelIndex + 1} <span className="text-gold/40">/</span> {totalLevels}
       </div>
       <div
-        className={`text-center font-display font-semibold leading-none ${
-          isBreak ? "text-gold-light" : "text-white"
+        className={`nums font-numeric font-extrabold leading-none ${
+          isBreak ? "text-gold glow-gold" : "text-white glow-gold-soft"
         }`}
         style={{ fontSize: "clamp(4rem, 11vw, 10rem)" }}
       >
@@ -94,7 +98,7 @@ function SidePanels({
   return (
     <div className="flex w-full flex-col gap-4">
       <SidePanel label="Следующий уровень">
-        <span className="font-display text-3xl font-semibold text-white sm:text-4xl">
+        <span className="nums font-numeric text-2xl font-bold text-slate-100 sm:text-3xl">
           {nextLevel
             ? formatBlinds(nextLevel.smallBlind, nextLevel.bigBlind, nextLevel.isBreak)
             : "Финал"}
@@ -103,7 +107,7 @@ function SidePanels({
 
       {secondsUntilBreak !== null && (
         <SidePanel label="Перерыв через">
-          <span className="font-mono text-3xl font-bold text-gold sm:text-4xl">
+          <span className="nums font-numeric text-2xl font-bold text-slate-100 sm:text-3xl">
             {formatClock(secondsUntilBreak)}
           </span>
         </SidePanel>
@@ -111,7 +115,7 @@ function SidePanels({
 
       {!isBreak && level && level.ante > 0 && (
         <SidePanel label="Анте">
-          <span className="font-mono text-3xl font-bold text-gold sm:text-4xl">
+          <span className="nums font-numeric text-2xl font-bold text-gold sm:text-3xl">
             {formatChips(level.ante)}
           </span>
         </SidePanel>
@@ -128,8 +132,8 @@ function SidePanel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gold/30 bg-black/50 px-6 py-4 backdrop-blur-sm">
-      <div className="font-display text-sm font-medium uppercase tracking-[0.25em] text-gold/70 sm:text-base">
+    <div className="rounded-xl border border-gold/20 bg-black/40 px-6 py-4 backdrop-blur-sm">
+      <div className="font-heading text-sm font-medium uppercase tracking-[0.25em] text-gold/60 sm:text-base">
         {label}
       </div>
       <div className="mt-1.5 text-right">{children}</div>

@@ -26,8 +26,12 @@ import { secondsUntilNextBreak } from "../format";
  *   └──────────┴──────────────────────────┴────────────────────┘
  *      left            center                    right
  *
- * Themed in the black-and-gold Poker Lounge palette with Cormorant Garamond
- * for the antiqua headings.
+ * Themed in the black-and-gold Poker Lounge palette:
+ *   - Tournament name + emblem: Playfair Display Bold with a gold gradient.
+ *   - Section labels (BLINDS, СЛЕДУЮЩИЙ УРОВЕНЬ, …): Oswald condensed uppercase.
+ *   - All numbers (timer, blinds, chips): Montserrat ExtraBold, tabular-nums.
+ *   - Gold is reserved for accents only; body text stays light grey / white.
+ *   - Background is charcoal (#0B0B10), not pure black, so gold reads richer.
  */
 export function DisplayPage() {
   const { state, connected } = useTournamentState(false);
@@ -70,9 +74,10 @@ export function DisplayPage() {
 
       <SoundToggle enabled={alerts.enabled} onEnable={alerts.enable} />
 
-      {/* Header strip: tournament name centered, full width. */}
-      <header className="flex shrink-0 items-center justify-center px-6 pt-5 pb-2">
-        <h1 className="text-center font-display text-6xl font-semibold tracking-[0.15em] text-gold drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-7xl lg:text-8xl">
+      {/* Header strip: tournament name centered, full width. Playfair Display
+          Bold with a gold gradient clipped to the text + a restrained glow. */}
+      <header className="flex shrink-0 items-center justify-center px-6 pt-6 pb-3">
+        <h1 className="text-gold-gradient glow-gold text-center font-display text-5xl font-bold tracking-[0.08em] sm:text-6xl lg:text-7xl">
           {state.name}
         </h1>
       </header>
@@ -121,7 +126,7 @@ export function DisplayPage() {
 /**
  * The Poker Lounge club emblem. If a logo image is uploaded it is shown framed
  * in a thin gold ring; otherwise a CSS-only emblem renders the club name in
- * Cormorant Garamond flanked by card suits.
+ * Playfair Display Bold with the gold gradient, flanked by card suits.
  */
 function ClubEmblem({ logoUrl }: { logoUrl?: string }) {
   if (logoUrl) {
@@ -129,20 +134,20 @@ function ClubEmblem({ logoUrl }: { logoUrl?: string }) {
       <img
         src={logoUrl}
         alt="Poker Lounge"
-        className="h-48 w-48 rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_20px_rgba(0,0,0,0.6)] sm:h-56 sm:w-56 lg:h-64 lg:w-64"
+        className="h-40 w-40 rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_24px_rgba(0,0,0,0.6)] sm:h-48 sm:w-48 lg:h-56 lg:w-56"
       />
     );
   }
   return (
-      <div className="flex flex-col items-center">
-      <div className="flex items-center gap-6 text-gold">
-        <span className="text-4xl sm:text-5xl">♠</span>
-        <span className="font-display text-4xl font-semibold tracking-[0.2em] text-gold sm:text-5xl lg:text-6xl">
+    <div className="flex flex-col items-center">
+      <div className="flex items-center gap-6">
+        <span className="glow-gold-soft text-3xl text-gold sm:text-4xl">♠</span>
+        <span className="text-gold-gradient glow-gold font-display text-3xl font-bold tracking-[0.2em] sm:text-4xl lg:text-5xl">
           POKER&nbsp;LOUNGE
         </span>
-        <span className="text-4xl sm:text-5xl">♣</span>
+        <span className="glow-gold-soft text-3xl text-gold sm:text-4xl">♣</span>
       </div>
-      <div className="mt-2 h-px w-96 bg-gradient-to-r from-transparent via-gold/60 to-transparent sm:w-[28rem]" />
+      <div className="mt-2 h-px w-80 bg-gradient-to-r from-transparent via-gold/60 to-transparent sm:w-96" />
     </div>
   );
 }
