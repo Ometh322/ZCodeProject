@@ -89,6 +89,7 @@ export async function loadState(): Promise<TournamentState | null> {
     bigBlind: l.bigBlind,
     ante: l.ante,
     isBreak: l.isBreak,
+    breakTitle: l.breakTitle,
   }));
 
   const players: Player[] = t.players.map((p) => ({
@@ -180,6 +181,7 @@ export async function upsertTournament(input: UpsertTournamentInput): Promise<To
                   bigBlind: l.bigBlind,
                   ante: l.ante,
                   isBreak: l.isBreak,
+                  breakTitle: l.breakTitle ?? null,
                 })),
               },
             }
@@ -215,6 +217,7 @@ export async function upsertTournament(input: UpsertTournamentInput): Promise<To
             bigBlind: l.bigBlind,
             ante: l.ante,
             isBreak: l.isBreak,
+            breakTitle: l.breakTitle ?? null,
           })),
         },
       },

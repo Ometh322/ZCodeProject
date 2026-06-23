@@ -100,7 +100,7 @@ export function DisplayPage() {
           <BlindsCard
             level={currentLevel}
             levelIndex={state.currentLevelIndex}
-            totalLevels={state.levels.length}
+            levels={state.levels}
             nextLevel={nextLevel}
             secondsUntilBreak={untilBreak}
             layout="center"
@@ -113,7 +113,7 @@ export function DisplayPage() {
           <BlindsCard
             level={currentLevel}
             levelIndex={state.currentLevelIndex}
-            totalLevels={state.levels.length}
+            levels={state.levels}
             nextLevel={nextLevel}
             secondsUntilBreak={untilBreak}
             layout="side"

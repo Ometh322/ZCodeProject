@@ -22,6 +22,8 @@ export interface Level {
   ante: number;
   /** True when this is a scheduled break (no blinds shown). */
   isBreak: boolean;
+  /** Optional custom title for a break level (e.g. "Обед"). Null = default "Перерыв". */
+  breakTitle: string | null;
 }
 
 /** A registered player in the active tournament. */
@@ -122,7 +124,9 @@ export interface UpsertTournamentInput {
   /** Preset name to seed levels from, or null to keep manual editing. */
   preset?: PresetName | null;
   /** When provided, fully replaces the level structure. */
-  levels?: Array<Pick<Level, "durationSec" | "smallBlind" | "bigBlind" | "ante" | "isBreak">>;
+  levels?: Array<
+    Pick<Level, "durationSec" | "smallBlind" | "bigBlind" | "ante" | "isBreak" | "breakTitle">
+  >;
   /** Four purchase types, each split into chips / cost. All optional, default 0. */
   buyInChips?: number;
   buyInCost?: number;
@@ -164,5 +168,7 @@ export interface PresetDefinition {
   name: PresetName;
   label: string;
   description: string;
-  levels: Array<Pick<Level, "durationSec" | "smallBlind" | "bigBlind" | "ante" | "isBreak">>;
+  levels: Array<
+    Pick<Level, "durationSec" | "smallBlind" | "bigBlind" | "ante" | "isBreak" | "breakTitle">
+  >;
 }

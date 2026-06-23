@@ -64,6 +64,9 @@ model Level {
   bigBlind     Int
   ante         Int        @default(0)
   isBreak      Boolean    @default(false)
+  // Optional custom title shown when this is a break level (e.g. "Перерыв",
+  // "Обед"). Null falls back to a default "Перерыв" label in the UI.
+  breakTitle   String?
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 

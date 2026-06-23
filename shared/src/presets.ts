@@ -23,6 +23,7 @@ function level(
     bigBlind: smallBlind * 2,
     ante,
     isBreak: false,
+    breakTitle: null,
   };
 }
 
@@ -33,6 +34,7 @@ const BREAK: PresetDefinition["levels"][number] = {
   bigBlind: 0,
   ante: 0,
   isBreak: true,
+  breakTitle: "Перерыв",
 };
 
 const REGULAR: PresetDefinition = {

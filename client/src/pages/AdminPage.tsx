@@ -104,6 +104,7 @@ export function AdminPage() {
       bigBlind: number;
       ante: number;
       isBreak: boolean;
+      breakTitle: string | null;
     }>,
   ) {
     await api.saveTournament({

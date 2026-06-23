@@ -4,7 +4,9 @@ import { formatBlinds, formatChips, formatClock } from "../format";
 interface BlindsCardProps {
   level: Level | undefined;
   levelIndex: number;
-  totalLevels: number;
+  /** Full level array — needed to compute the game-level number (breaks don't
+   *  consume a number) and the total count of playing levels. */
+  levels: Level[];
   nextLevel: Level | undefined;
   /** Seconds until the next scheduled break, or null if none remains. */
   secondsUntilBreak: number | null;
@@ -29,11 +31,15 @@ interface BlindsCardProps {
  * Typography follows the black-and-gold system: Oswald for the uppercase
  * labels, Montserrat ExtraBold with tabular-nums for all numbers, gold kept
  * for accents (current level, ante) while secondary info is light grey/white.
+ *
+ * Numbering: the "Уровень N / M" counter counts only playing levels — break
+ * levels are skipped, so a break between level 3 and level 4 doesn't turn 4
+ * into 5. On a break the headline shows the break's title instead of blinds.
  */
 export function BlindsCard({
   level,
   levelIndex,
-  totalLevels,
+  levels,
   nextLevel,
   secondsUntilBreak,
   layout = "center",
@@ -48,11 +54,7 @@ export function BlindsCard({
     );
   }
   return (
-    <CenterHeadline
-      level={level}
-      levelIndex={levelIndex}
-      totalLevels={totalLevels}
-    />
+    <CenterHeadline level={level} levelIndex={levelIndex} levels={levels} />
   );
 }
 
@@ -60,25 +62,44 @@ export function BlindsCard({
 function CenterHeadline({
   level,
   levelIndex,
-  totalLevels,
+  levels,
 }: {
   level: Level | undefined;
   levelIndex: number;
-  totalLevels: number;
+  levels: Level[];
 }) {
   const isBreak = level?.isBreak ?? false;
+
+  // Count playing levels only, for the "Уровень N / M" display.
+  const totalGameLevels = levels.filter((l) => !l.isBreak).length;
+  let gameNumber = 0;
+  for (let i = 0; i <= levelIndex && i < levels.length; i++) {
+    if (!levels[i].isBreak) gameNumber += 1;
+  }
+
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
-        Уровень {levelIndex + 1} <span className="text-gold/40">/</span> {totalLevels}
-      </div>
+      {isBreak ? (
+        <div className="font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
+          {level?.breakTitle || "Перерыв"}
+        </div>
+      ) : (
+        <div className="font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
+          Уровень {gameNumber} <span className="text-gold/40">/</span>{" "}
+          {totalGameLevels}
+        </div>
+      )}
       <div
         className={`nums font-numeric font-extrabold leading-none ${
           isBreak ? "text-gold glow-gold" : "text-white glow-gold-soft"
         }`}
         style={{ fontSize: "clamp(4rem, 11vw, 10rem)" }}
       >
-        {level ? formatBlinds(level.smallBlind, level.bigBlind, level.isBreak) : "—"}
+        {isBreak
+          ? level?.breakTitle || "Перерыв"
+          : level
+            ? formatBlinds(level.smallBlind, level.bigBlind, level.isBreak)
+            : "—"}
       </div>
     </div>
   );
@@ -100,7 +121,9 @@ function SidePanels({
       <SidePanel label="Следующий уровень">
         <span className="nums font-numeric text-2xl font-bold text-slate-100 sm:text-3xl">
           {nextLevel
-            ? formatBlinds(nextLevel.smallBlind, nextLevel.bigBlind, nextLevel.isBreak)
+            ? nextLevel.isBreak
+              ? nextLevel.breakTitle || "Перерыв"
+              : formatBlinds(nextLevel.smallBlind, nextLevel.bigBlind, nextLevel.isBreak)
             : "Финал"}
         </span>
       </SidePanel>
