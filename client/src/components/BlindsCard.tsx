@@ -85,8 +85,7 @@ function CenterHeadline({
         </div>
       ) : (
         <div className="text-center font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
-          Уровень {gameNumber} <span className="text-gold/40">/</span>{" "}
-          {totalGameLevels}
+          Уровень {gameNumber}
         </div>
       )}
       <div
