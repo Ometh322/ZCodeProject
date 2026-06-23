@@ -59,24 +59,26 @@ export function DisplayPage() {
       <SoundToggle enabled={alerts.enabled} onEnable={alerts.enable} />
 
       {/* Three-column body: fills the whole viewport. The center column owns
-          the full vertical stack — name → emblem → level → timer — with one
-          uniform gap so the emblem sits equidistant between the name above it
-          and the "Уровень" label below it. */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-6 py-6 lg:grid-cols-[minmax(16rem,1fr)_minmax(0,3fr)_minmax(16rem,1fr)]">
+          the full vertical stack — name → emblem → level → timer — pushed to
+          the top (justify-start) so the name + logo sit high on the screen. */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-6 pt-10 pb-6 lg:grid-cols-[minmax(16rem,1fr)_minmax(0,3fr)_minmax(16rem,1fr)]">
         {/* Left column: vertical stats. */}
         <aside className="flex min-h-0 flex-col items-center justify-center gap-6 lg:items-stretch">
           <StatsBar state={state} />
         </aside>
 
-        {/* Center column: the whole vertical story, one gap controls spacing. */}
-        <main className="flex min-h-0 flex-col items-center justify-center gap-6">
-          {/* Tournament name (Playfair Display Bold, gold gradient). */}
-          <h1 className="text-gold-gradient glow-gold text-center font-display text-4xl font-bold tracking-[0.08em] sm:text-5xl lg:text-6xl">
+        {/* Center column: the whole vertical story. justify-start keeps the
+            name + logo near the top; gap-5 controls the rest of the rhythm. */}
+        <main className="flex min-h-0 flex-col items-center justify-start gap-5 pt-2">
+          {/* Tournament name (Playfair Display Bold, gold gradient) — scaled up
+              1.5x (was text-4xl/5xl/6xl). */}
+          <h1 className="text-gold-gradient glow-gold text-center font-display text-6xl font-bold tracking-[0.08em] sm:text-7xl lg:text-8xl">
             {state.name}
           </h1>
 
           {/* Club emblem — equidistant from the name above and the level below
-              because all three share the same gap-6 on this flex column. */}
+              because all three share the same gap on this flex column. Scaled
+              up 1.5x (was h-28/32/36). */}
           <ClubEmblem logoUrl={state.logoImage ?? undefined} />
 
           <BlindsCard
@@ -117,20 +119,20 @@ function ClubEmblem({ logoUrl }: { logoUrl?: string }) {
       <img
         src={logoUrl}
         alt="Poker Lounge"
-        className="h-28 w-28 rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_24px_rgba(0,0,0,0.6)] sm:h-32 sm:w-32 lg:h-36 lg:w-36"
+        className="h-40 w-40 rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_24px_rgba(0,0,0,0.6)] sm:h-48 sm:w-48 lg:h-56 lg:w-56"
       />
     );
   }
   return (
     <div className="flex flex-col items-center">
-      <div className="flex items-center gap-6">
-        <span className="glow-gold-soft text-3xl text-gold sm:text-4xl">♠</span>
-        <span className="text-gold-gradient glow-gold font-display text-3xl font-bold tracking-[0.2em] sm:text-4xl lg:text-5xl">
+      <div className="flex items-center gap-8">
+        <span className="glow-gold-soft text-4xl text-gold sm:text-5xl">♠</span>
+        <span className="text-gold-gradient glow-gold font-display text-4xl font-bold tracking-[0.2em] sm:text-5xl lg:text-6xl">
           POKER&nbsp;LOUNGE
         </span>
-        <span className="glow-gold-soft text-3xl text-gold sm:text-4xl">♣</span>
+        <span className="glow-gold-soft text-4xl text-gold sm:text-5xl">♣</span>
       </div>
-      <div className="mt-2 h-px w-80 bg-gradient-to-r from-transparent via-gold/60 to-transparent sm:w-96" />
+      <div className="mt-2 h-px w-96 bg-gradient-to-r from-transparent via-gold/60 to-transparent sm:w-[32rem]" />
     </div>
   );
 }

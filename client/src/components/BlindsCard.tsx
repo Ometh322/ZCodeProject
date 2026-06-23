@@ -80,11 +80,11 @@ function CenterHeadline({
   return (
     <div className="flex flex-col items-center gap-4">
       {isBreak ? (
-        <div className="font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
-          {level?.breakTitle || "Перерыв"}
+        <div className="text-center font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
+          <span className="pl-[0.4em]">{level?.breakTitle || "Перерыв"}</span>
         </div>
       ) : (
-        <div className="font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
+        <div className="text-center font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
           Уровень {gameNumber} <span className="text-gold/40">/</span>{" "}
           {totalGameLevels}
         </div>
