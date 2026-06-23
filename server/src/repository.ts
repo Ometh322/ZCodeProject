@@ -120,7 +120,6 @@ export async function loadState(): Promise<TournamentState | null> {
     remainingSeconds: t.remainingSec,
     totalChips,
     startedAt: t.startedAt?.toISOString() ?? null,
-    backgroundImage: t.backgroundImage,
     logoImage: t.logoImage,
     soundAlert1Min: t.soundAlert1Min,
     soundAlert10Sec: t.soundAlert10Sec,
@@ -472,19 +471,6 @@ export async function applyAddon(
         player.tournament,
       ),
     },
-  });
-  const state = await loadState();
-  if (!state) throw new Error("Failed to load state");
-  return state;
-}
-
-/** Sets the background image path on the active tournament. */
-export async function setBackgroundImage(relativePath: string | null): Promise<TournamentState> {
-  const t = await getActiveTournament();
-  if (!t) throw new Error("No active tournament");
-  await prisma.tournament.update({
-    where: { id: t.id },
-    data: { backgroundImage: relativePath },
   });
   const state = await loadState();
   if (!state) throw new Error("Failed to load state");

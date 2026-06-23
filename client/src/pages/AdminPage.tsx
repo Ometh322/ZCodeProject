@@ -11,7 +11,7 @@ import { PlayerTable } from "../components/PlayerTable";
 /**
  * Admin control panel. Composes:
  *   1. Live status header — name, current level, timer, control bar.
- *   2. Tournament settings — name, pricing (4 purchase types × chips/cost), background.
+ *   2. Tournament settings — name, pricing (4 purchase types × chips / cost), logo, sounds.
  *   3. Level editor and player roster.
  *
  * Reads live state from the socket; persistent mutations go through REST and
@@ -31,11 +31,8 @@ export function AdminPage() {
   const [addonChips, setAddonChips] = useState("0");
   const [addonCost, setAddonCost] = useState("0");
   const [maxRebuys, setMaxRebuys] = useState("0");
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -114,30 +111,6 @@ export function AdminPage() {
     });
   }
 
-  async function handleBackgroundUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setUploadError(null);
-    try {
-      await api.uploadBackground(file);
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
-
-  async function handleClearBackground() {
-    try {
-      setUploadError(null);
-      await api.clearBackground();
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : String(err));
-    }
-  }
-
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -194,7 +167,6 @@ export function AdminPage() {
   }
 
   const currentLevel = state.levels[state.currentLevelIndex];
-  const backgroundUrl = state.backgroundImage ?? undefined;
   const logoUrl = state.logoImage ?? undefined;
 
   return (
@@ -322,48 +294,8 @@ export function AdminPage() {
         </div>
       </section>
 
-      {/* Background image */}
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        <h2 className="mb-4 text-xl font-bold">Фон экрана турнира</h2>
-        {uploadError && (
-          <p className="mb-3 rounded bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            {uploadError}
-          </p>
-        )}
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="h-24 w-40 overflow-hidden rounded-lg border border-white/10 bg-black/30">
-            {backgroundUrl ? (
-              <img
-                src={backgroundUrl}
-                alt="Превью фона"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-xs text-slate-500">
-                Нет фона
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleBackgroundUpload}
-              disabled={uploading}
-              className="text-sm text-slate-300 file:mr-3 file:rounded file:border-0 file:bg-gold file:px-4 file:py-2 file:font-semibold file:text-black hover:file:brightness-110"
-            />
-            {state.backgroundImage && (
-              <button
-                onClick={handleClearBackground}
-                className="rounded border border-red-500/40 bg-red-500/10 px-3 py-1 text-sm text-red-300 hover:bg-red-500/20"
-              >
-                Убрать фон
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
+      {/* Background image removed per request — the feature never worked
+          reliably and the logo upload covers the branding need. */}
 
       {/* Club logo */}
       <section className="rounded-2xl border border-white/10 bg-white/5 p-6">

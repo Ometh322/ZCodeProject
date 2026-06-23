@@ -119,7 +119,7 @@ function SidePanels({
   return (
     <div className="flex w-full flex-col gap-4">
       <SidePanel label="Следующий уровень">
-        <span className="nums font-numeric text-2xl font-bold text-slate-100 sm:text-3xl">
+        <span className="nums font-numeric text-4xl font-bold text-slate-100 sm:text-5xl">
           {nextLevel
             ? nextLevel.isBreak
               ? nextLevel.breakTitle || "Перерыв"
@@ -130,7 +130,7 @@ function SidePanels({
 
       {secondsUntilBreak !== null && (
         <SidePanel label="Перерыв через">
-          <span className="nums font-numeric text-2xl font-bold text-slate-100 sm:text-3xl">
+          <span className="nums font-numeric text-4xl font-bold text-slate-100 sm:text-5xl">
             {formatClock(secondsUntilBreak)}
           </span>
         </SidePanel>
@@ -138,7 +138,7 @@ function SidePanels({
 
       {!isBreak && level && level.ante > 0 && (
         <SidePanel label="Анте">
-          <span className="nums font-numeric text-2xl font-bold text-gold sm:text-3xl">
+          <span className="nums font-numeric text-4xl font-bold text-gold sm:text-5xl">
             {formatChips(level.ante)}
           </span>
         </SidePanel>
@@ -155,11 +155,11 @@ function SidePanel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gold/20 bg-black/40 px-6 py-4 backdrop-blur-sm">
+    <div className="rounded-xl border border-gold/20 bg-black/40 px-6 py-4 text-center backdrop-blur-sm">
       <div className="font-heading text-sm font-medium uppercase tracking-[0.25em] text-gold/60 sm:text-base">
         {label}
       </div>
-      <div className="mt-1.5 text-right">{children}</div>
+      <div className="mt-1.5">{children}</div>
     </div>
   );
 }

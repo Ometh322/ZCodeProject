@@ -22,7 +22,6 @@ export function StatsBar({ state }: StatsBarProps) {
   const totalPlayers = state.players.length;
   const averageStack =
     playersRemaining > 0 ? Math.round(state.totalChips / playersRemaining) : 0;
-  const prizePool = state.players.reduce((sum, p) => sum + p.paidAmount, 0);
 
   const rebuyMaster = [...state.players]
     .filter((p) => p.rebuyCount > 0)
@@ -32,10 +31,12 @@ export function StatsBar({ state }: StatsBarProps) {
     <div className="flex w-full flex-col gap-3">
       <Stat label="Средний стек" value={formatChips(averageStack)} />
       <Stat label="В игре" value={`${playersRemaining} / ${totalPlayers}`} />
-      {/* Prize pool is the one stat that earns gold + glow. */}
+      {/* Total chips in play (sum of all player stacks). Gold + glow as the
+          hero stat. Contrast with the prize pool, which is money — this card
+          is about the actual chips on the tables. */}
       <Stat
         label="Фишек в игре"
-        value={formatChips(prizePool)}
+        value={formatChips(state.totalChips)}
         accent="text-gold glow-gold-soft"
       />
       {rebuyMaster ? (

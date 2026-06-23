@@ -123,30 +123,6 @@ export const api = {
     });
   },
 
-  /** Uploads a background image. Uses FormData, so no JSON content-type. */
-  async uploadBackground(file: File): Promise<{ backgroundImage: string }> {
-    const form = new FormData();
-    form.append("image", file);
-    const res = await fetch(`${BASE}/api/tournament/background`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: form,
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(body.error ?? `Upload failed: ${res.status}`);
-    }
-    return res.json();
-  },
-
-  /** Clears the background image. */
-  clearBackground(): Promise<{ backgroundImage: null }> {
-    return request<{ backgroundImage: null }>("/api/tournament/background", {
-      method: "DELETE",
-      headers: authHeaders(),
-    });
-  },
-
   /** Uploads the club logo. Uses FormData, so no JSON content-type. */
   async uploadLogo(file: File): Promise<{ logoImage: string }> {
     const form = new FormData();

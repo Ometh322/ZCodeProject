@@ -80,8 +80,6 @@ export interface TournamentState {
   /** Total chips in play (sum of all player stacks; derived, read-only). */
   totalChips: number;
   startedAt: string | null;
-  /** Relative URL of the uploaded background image, or null. */
-  backgroundImage: string | null;
   /** Relative URL of the uploaded club logo, or null. */
   logoImage: string | null;
   /**

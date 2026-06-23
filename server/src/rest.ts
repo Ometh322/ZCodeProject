@@ -12,7 +12,6 @@ import {
   applyRebuy,
   loadState,
   removePlayer,
-  setBackgroundImage,
   setLogoImage,
   setSoundAlert,
   updatePlayer,
@@ -85,37 +84,6 @@ export function createApiRouter(engine: TimerEngine, upload: multer.Multer): Rou
       await upsertTournament(input);
       await engine.sync();
       res.json(await loadState());
-    } catch (err) {
-      res.status(500).json({ error: (err as Error).message });
-    }
-  });
-
-  // Background image upload. multer saves the file to /uploads; we store the
-  // relative URL on the tournament so the display page can <img> it.
-  router.post(
-    "/tournament/background",
-    upload.single("image"),
-    async (req, res) => {
-      if (!req.file) {
-        res.status(400).json({ error: "Image file required (field name: image)" });
-        return;
-      }
-      const relativePath = `/uploads/${req.file.filename}`;
-      try {
-        await setBackgroundImage(relativePath);
-        await engine.sync();
-        res.json({ backgroundImage: relativePath });
-      } catch (err) {
-        res.status(500).json({ error: (err as Error).message });
-      }
-    },
-  );
-
-  router.delete("/tournament/background", async (_req, res) => {
-    try {
-      await setBackgroundImage(null);
-      await engine.sync();
-      res.json({ backgroundImage: null });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
     }

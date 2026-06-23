@@ -50,28 +50,10 @@ export function DisplayPage() {
   const currentLevel = state.levels[state.currentLevelIndex];
   const nextLevel = state.levels[state.currentLevelIndex + 1];
   const paused = state.status === "paused" || state.status === "setup";
-  const hasBackground = Boolean(state.backgroundImage);
   const untilBreak = secondsUntilNextBreak(state);
 
   return (
-    <div
-      className={`relative flex h-screen flex-col overflow-hidden ${
-        hasBackground ? "" : "bg-felt-dark"
-      }`}
-    >
-      {/* Background image layer. Rendered behind the content with a dark scrim
-          so text stays readable over busy imagery. */}
-      {state.backgroundImage && (
-        <>
-          <img
-            src={state.backgroundImage}
-            alt=""
-            className="pointer-events-none fixed inset-0 -z-10 h-full w-full object-cover"
-          />
-          <div className="pointer-events-none fixed inset-0 -z-10 bg-black/70" />
-        </>
-      )}
-
+    <div className="relative flex h-screen flex-col overflow-hidden bg-felt-dark">
       <ConnectionDot connected={connected} />
 
       <SoundToggle enabled={alerts.enabled} onEnable={alerts.enable} />
