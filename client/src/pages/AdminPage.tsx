@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Player, PresetDefinition } from "@poker-club/shared";
 import { api } from "../api";
+import { useAuth } from "../auth/AuthContext";
 import { useTournamentState } from "../useTournamentState";
 import { formatBlinds, formatChips, formatClock } from "../format";
 import { ControlsBar } from "../components/ControlsBar";
@@ -68,8 +69,12 @@ export function AdminPage() {
     state?.maxRebuys,
   ]);
 
+  // useAuth().logout flips the reactive auth flag so the `/login` route guard
+  // admits us immediately — no page refresh needed.
+  const { logout } = useAuth();
+
   function handleLogout() {
-    api.logout();
+    logout();
     navigate("/login");
   }
 

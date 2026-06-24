@@ -1,20 +1,25 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../api";
+import { useAuth } from "../auth/AuthContext";
 
-/** Simple password gate. The token is stored in localStorage by `api.login`. */
+/**
+ * Simple password gate. On success `useAuth().login` flips the reactive auth
+ * flag (so the `/admin` route guard immediately admits us) and we navigate.
+ * No page refresh needed — that was the old bug.
+ */
 export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      await api.login(password);
+      await login(password);
       navigate("/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка входа");
