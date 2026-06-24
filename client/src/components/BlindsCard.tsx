@@ -18,6 +18,12 @@ interface BlindsCardProps {
    * Defaults to "center" for backwards compatibility.
    */
   layout?: "center" | "side";
+  /** Center-column font size in px for the big blinds value. When provided
+   *  (by the adaptive sizing hook) the headline uses exactly this size so the
+   *  blinds string provably fits one line; otherwise falls back to clamp(). */
+  centerFontSize?: number;
+  /** Center-column font size in px for the "Уровень N / M" label. */
+  labelFontSize?: number;
 }
 
 /**
@@ -43,6 +49,8 @@ export function BlindsCard({
   nextLevel,
   secondsUntilBreak,
   layout = "center",
+  centerFontSize,
+  labelFontSize,
 }: BlindsCardProps) {
   if (layout === "side") {
     return (
@@ -54,7 +62,13 @@ export function BlindsCard({
     );
   }
   return (
-    <CenterHeadline level={level} levelIndex={levelIndex} levels={levels} />
+    <CenterHeadline
+      level={level}
+      levelIndex={levelIndex}
+      levels={levels}
+      fontSize={centerFontSize}
+      labelFontSize={labelFontSize}
+    />
   );
 }
 
@@ -63,36 +77,52 @@ function CenterHeadline({
   level,
   levelIndex,
   levels,
+  fontSize,
+  labelFontSize,
 }: {
   level: Level | undefined;
   levelIndex: number;
   levels: Level[];
+  fontSize?: number;
+  labelFontSize?: number;
 }) {
   const isBreak = level?.isBreak ?? false;
 
-  // Count playing levels only, for the "Уровень N / M" display.
-  const totalGameLevels = levels.filter((l) => !l.isBreak).length;
+  // Count playing levels only, for the "Уровень N" display.
   let gameNumber = 0;
   for (let i = 0; i <= levelIndex && i < levels.length; i++) {
     if (!levels[i].isBreak) gameNumber += 1;
   }
 
+  const headlineStyle = fontSize
+    ? { fontSize: `${fontSize}px` }
+    : { fontSize: "clamp(4rem, 11vw, 10rem)" };
+  const labelStyle = labelFontSize
+    ? { fontSize: `${labelFontSize}px` }
+    : undefined;
+
   return (
     <div className="flex flex-col items-center gap-4">
       {isBreak ? (
-        <div className="text-center font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
+        <div
+          className="text-center font-heading font-medium uppercase tracking-[0.4em] text-gold"
+          style={labelStyle ?? { fontSize: "clamp(1.25rem, 2vw, 1.5rem)" }}
+        >
           <span className="pl-[0.4em]">{level?.breakTitle || "Перерыв"}</span>
         </div>
       ) : (
-        <div className="text-center font-heading text-xl font-medium uppercase tracking-[0.4em] text-gold sm:text-2xl">
+        <div
+          className="text-center font-heading font-medium uppercase tracking-[0.4em] text-gold"
+          style={labelStyle ?? { fontSize: "clamp(1.25rem, 2vw, 1.5rem)" }}
+        >
           Уровень {gameNumber}
         </div>
       )}
       <div
-        className={`nums font-numeric font-extrabold leading-none ${
+        className={`nums font-numeric font-extrabold leading-none whitespace-nowrap ${
           isBreak ? "text-gold glow-gold" : "text-white glow-gold-soft"
         }`}
-        style={{ fontSize: "clamp(4rem, 11vw, 10rem)" }}
+        style={headlineStyle}
       >
         {isBreak
           ? level?.breakTitle || "Перерыв"

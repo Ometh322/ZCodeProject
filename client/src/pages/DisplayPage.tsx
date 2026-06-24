@@ -1,9 +1,12 @@
 import { useTournamentState } from "../useTournamentState";
 import { useTournamentAlerts } from "../hooks/useTournamentAlerts";
+import { useDisplaySizes } from "../hooks/useDisplaySizes";
 import { Timer } from "../components/Timer";
 import { BlindsCard } from "../components/BlindsCard";
 import { StatsBar } from "../components/StatsBar";
-import { secondsUntilNextBreak } from "../format";
+import { formatBlinds, secondsUntilNextBreak } from "../format";
+import type { DisplaySizes } from "../hooks/useDisplaySizes";
+import type { Level } from "@poker-club/shared";
 
 /**
  * Full-screen tournament display, meant to be left open on a TV or projector
@@ -12,23 +15,14 @@ import { secondsUntilNextBreak } from "../format";
  *
  * The layout is a full-bleed three-column grid that fills the whole viewport.
  * The center column owns the full vertical story — name → emblem → level →
- * timer — with one uniform gap so the emblem sits equidistant between the name
- * above it and the "Уровень" label below it:
+ * timer — pushed to the top so the name + logo sit high on the screen.
  *
- *   ┌──────────────────────────────────────────────────────────┐
- *   │  [● в сети]                            [🔊 Звук]          │
- *   ├──────────┬──────────────────────────┬────────────────────┤
- *   │          │       ИМЯ ТУРНИРА        │  СЛЕДУЮЩИЙ УРОВЕНЬ │
- *   │ Средний  │                          │  150 / 300         │
- *   │ стек     │        [ ЭМБЛЕМА ]       │                    │
- *   │ В игре   │                          │  ПЕРЕРЫВ ЧЕРЕЗ     │
- *   │ Призовой │       100 / 200          │     45:00          │
- *   │ фонд     │      ┌─────────┐         │                    │
- *   │          │      │  14:23  │         │  АНТЕ: 200         │
- *   └──────────┴──────────────────────────┴────────────────────┘
- *      left            center                    right
+ * Adaptive sizing: the center column is measured with a ResizeObserver and a
+ * canvas text probe (`useDisplaySizes`). The headline font is scaled so the
+ * longest possible blinds string ("500 000 / 1 000 000") provably fits on one
+ * line at the measured width — no wrapping on any screen size.
  *
- * Themed in the black-and-gold Texas palette:
+ * Themed in the black-and-gold Poker Lounge palette:
  *   - Tournament name + emblem: Playfair Display Bold with a gold gradient.
  *   - Section labels (BLINDS, СЛЕДУЮЩИЙ УРОВЕНЬ, …): Oswald condensed uppercase.
  *   - All numbers (timer, blinds, chips): Montserrat ExtraBold, tabular-nums.
@@ -52,45 +46,39 @@ export function DisplayPage() {
   const paused = state.status === "paused" || state.status === "setup";
   const untilBreak = secondsUntilNextBreak(state);
 
+  // The blinds text currently shown — used as the width probe for sizing.
+  const blindsText = currentLevel
+    ? currentLevel.isBreak
+      ? currentLevel.breakTitle || "Перерыв"
+      : formatBlinds(currentLevel.smallBlind, currentLevel.bigBlind, currentLevel.isBreak)
+    : "—";
+
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-felt-dark">
       <ConnectionDot connected={connected} />
 
       <SoundToggle enabled={alerts.enabled} onEnable={alerts.enable} />
 
-      {/* Three-column body: fills the whole viewport. The center column owns
-          the full vertical stack — name → emblem → level → timer — pushed to
-          the top (justify-start) so the name + logo sit high on the screen. */}
+      {/* Three-column body: fills the whole viewport. */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-6 pt-10 pb-6 lg:grid-cols-[minmax(16rem,1fr)_minmax(0,3fr)_minmax(16rem,1fr)]">
         {/* Left column: vertical stats. */}
         <aside className="flex min-h-0 flex-col items-center justify-center gap-6 lg:items-stretch">
           <StatsBar state={state} />
         </aside>
 
-        {/* Center column: the whole vertical story. justify-start keeps the
-            name + logo near the top; gap-5 controls the rest of the rhythm. */}
-        <main className="flex min-h-0 flex-col items-center justify-start gap-5 pt-2">
-          {/* Tournament name (Playfair Display Bold, gold gradient) — scaled up
-              1.5x (was text-4xl/5xl/6xl). */}
-          <h1 className="text-gold-gradient glow-gold text-center font-display text-6xl font-bold tracking-[0.08em] sm:text-7xl lg:text-8xl">
-            {state.name}
-          </h1>
-
-          {/* Club emblem — equidistant from the name above and the level below
-              because all three share the same gap on this flex column. Scaled
-              up 1.5x (was h-28/32/36). */}
-          <ClubEmblem logoUrl={state.logoImage ?? undefined} />
-
-          <BlindsCard
-            level={currentLevel}
-            levelIndex={state.currentLevelIndex}
-            levels={state.levels}
-            nextLevel={nextLevel}
-            secondsUntilBreak={untilBreak}
-            layout="center"
-          />
-          <Timer remainingSeconds={state.remainingSeconds} paused={paused} layout="center" />
-        </main>
+        {/* Center column: measured container drives the adaptive font sizes. */}
+        <CenterColumn
+          blindsText={blindsText}
+          name={state.name}
+          logoUrl={state.logoImage ?? undefined}
+          level={currentLevel}
+          levelIndex={state.currentLevelIndex}
+          levels={state.levels}
+          nextLevel={nextLevel}
+          secondsUntilBreak={untilBreak}
+          remainingSeconds={state.remainingSeconds}
+          paused={paused}
+        />
 
         {/* Right column: next level + break + ante side panels. */}
         <aside className="flex min-h-0 flex-col items-stretch justify-center gap-4">
@@ -109,30 +97,124 @@ export function DisplayPage() {
 }
 
 /**
- * The Texas club emblem. If a logo image is uploaded it is shown framed
+ * The measured center column. `useDisplaySizes` returns a ref to attach to the
+ * wrapper div and a set of px sizes derived from the wrapper's current width.
+ * Those sizes are passed down to the name, emblem, blinds headline and timer.
+ */
+function CenterColumn({
+  blindsText,
+  name,
+  logoUrl,
+  level,
+  levelIndex,
+  levels,
+  nextLevel,
+  secondsUntilBreak,
+  remainingSeconds,
+  paused,
+}: {
+  blindsText: string;
+  name: string;
+  logoUrl?: string;
+  level: Level | undefined;
+  levelIndex: number;
+  levels: Level[];
+  nextLevel: Level | undefined;
+  secondsUntilBreak: number | null;
+  remainingSeconds: number;
+  paused: boolean;
+}) {
+  const { containerRef, sizes } = useDisplaySizes(blindsText);
+
+  return (
+    <main
+      ref={containerRef}
+      className="flex min-h-0 min-w-0 flex-col items-center justify-start gap-5 pt-2"
+    >
+      {/* Tournament name (Playfair Display Bold, gold gradient). Size derived
+          from the center column width so long names don't wrap either. */}
+      <h1
+        className="text-gold-gradient glow-gold text-center font-display font-bold tracking-[0.08em]"
+        style={{ fontSize: `${sizes.title}px` }}
+      >
+        {name}
+      </h1>
+
+      <ClubEmblem logoUrl={logoUrl} size={sizes.logo} labelSize={sizes.label} />
+
+      <BlindsCard
+        level={level}
+        levelIndex={levelIndex}
+        levels={levels}
+        nextLevel={nextLevel}
+        secondsUntilBreak={secondsUntilBreak}
+        layout="center"
+        centerFontSize={sizes.blinds}
+        labelFontSize={sizes.label}
+      />
+      <Timer
+        remainingSeconds={remainingSeconds}
+        paused={paused}
+        clockFontSize={sizes.timer}
+        labelFontSize={sizes.label}
+      />
+    </main>
+  );
+}
+
+/**
+ * The Poker Lounge club emblem. If a logo image is uploaded it is shown framed
  * in a thin gold ring; otherwise a CSS-only emblem renders the club name in
  * Playfair Display Bold with the gold gradient, flanked by card suits.
+ *
+ * The size is driven by the adaptive `sizes.logo` value from useDisplaySizes
+ * so the emblem scales with the available width.
  */
-function ClubEmblem({ logoUrl }: { logoUrl?: string }) {
+function ClubEmblem({
+  logoUrl,
+  size,
+  labelSize,
+}: {
+  logoUrl?: string;
+  size: number;
+  labelSize: number;
+}) {
   if (logoUrl) {
     return (
       <img
         src={logoUrl}
-        alt="Texas"
-        className="h-40 w-40 rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_24px_rgba(0,0,0,0.6)] sm:h-48 sm:w-48 lg:h-56 lg:w-56"
+        alt="Poker Lounge"
+        className="rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_24px_rgba(0,0,0,0.6)]"
+        style={{ height: `${size}px`, width: `${size}px` }}
       />
     );
   }
   return (
     <div className="flex flex-col items-center">
       <div className="flex items-center gap-8">
-        <span className="glow-gold-soft text-4xl text-gold sm:text-5xl">♠</span>
-        <span className="text-gold-gradient glow-gold font-display text-4xl font-bold tracking-[0.2em] sm:text-5xl lg:text-6xl">
+        <span
+          className="glow-gold-soft text-gold"
+          style={{ fontSize: `${labelSize * 1.6}px` }}
+        >
+          ♠
+        </span>
+        <span
+          className="text-gold-gradient glow-gold font-display font-bold tracking-[0.2em]"
+          style={{ fontSize: `${labelSize * 1.6}px` }}
+        >
           POKER&nbsp;LOUNGE
         </span>
-        <span className="glow-gold-soft text-4xl text-gold sm:text-5xl">♣</span>
+        <span
+          className="glow-gold-soft text-gold"
+          style={{ fontSize: `${labelSize * 1.6}px` }}
+        >
+          ♣
+        </span>
       </div>
-      <div className="mt-2 h-px w-96 bg-gradient-to-r from-transparent via-gold/60 to-transparent sm:w-[32rem]" />
+      <div
+        className="mt-2 h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent"
+        style={{ width: `${size * 2}px` }}
+      />
     </div>
   );
 }
@@ -186,3 +268,6 @@ function SoundToggle({
     </button>
   );
 }
+
+// Re-export the sizes type so consumers don't need to import from the hook.
+export type { DisplaySizes };
