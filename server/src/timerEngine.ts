@@ -37,10 +37,16 @@ export class TimerEngine {
 
   start(): void {
     if (this.interval) return;
-    this.interval = setInterval(() => void this.tick(), TICK_MS);
+    this.interval = setInterval(() => {
+      this.tick().catch((err) => {
+        console.error("[timerEngine] tick failed:", err);
+      });
+    }, TICK_MS);
     // Don't keep the process alive solely for the timer (lets SIGINT shut down cleanly).
     this.interval.unref?.();
-    void this.sync();
+    void this.sync().catch((err) => {
+      console.error("[timerEngine] sync failed:", err);
+    });
   }
 
   stop(): void {

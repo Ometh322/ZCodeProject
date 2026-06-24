@@ -11,7 +11,7 @@ export function App() {
       <nav className="flex items-center justify-between border-b border-white/10 bg-black/30 px-6 py-3">
         <Link to="/display" className="flex items-center gap-2 font-bold">
           <span className="text-2xl">♠</span>
-          <span>Poker Lounge</span>
+          <span>Texas</span>
         </Link>
         <div className="flex gap-4 text-sm">
           <Link to="/display" className="text-slate-300 hover:text-white">

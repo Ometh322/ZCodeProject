@@ -28,7 +28,7 @@ import { secondsUntilNextBreak } from "../format";
  *   └──────────┴──────────────────────────┴────────────────────┘
  *      left            center                    right
  *
- * Themed in the black-and-gold Poker Lounge palette:
+ * Themed in the black-and-gold Texas palette:
  *   - Tournament name + emblem: Playfair Display Bold with a gold gradient.
  *   - Section labels (BLINDS, СЛЕДУЮЩИЙ УРОВЕНЬ, …): Oswald condensed uppercase.
  *   - All numbers (timer, blinds, chips): Montserrat ExtraBold, tabular-nums.
@@ -109,7 +109,7 @@ export function DisplayPage() {
 }
 
 /**
- * The Poker Lounge club emblem. If a logo image is uploaded it is shown framed
+ * The Texas club emblem. If a logo image is uploaded it is shown framed
  * in a thin gold ring; otherwise a CSS-only emblem renders the club name in
  * Playfair Display Bold with the gold gradient, flanked by card suits.
  */
@@ -118,7 +118,7 @@ function ClubEmblem({ logoUrl }: { logoUrl?: string }) {
     return (
       <img
         src={logoUrl}
-        alt="Poker Lounge"
+        alt="Texas"
         className="h-40 w-40 rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_24px_rgba(0,0,0,0.6)] sm:h-48 sm:w-48 lg:h-56 lg:w-56"
       />
     );
