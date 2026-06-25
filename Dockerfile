@@ -32,18 +32,9 @@ COPY . .
 # Generate the Prisma client (the server imports it at build/runtime).
 RUN npm -w server run db:generate
 
-# Build both workspaces: server (tsc -> dist) then client (vite -> dist).
+# Build both workspaces: shared (tsc) then server (tsc) then client (vite).
 # Note: the root `build` script runs them in order.
 RUN npm run build
-
-# Apply the Prisma migration so the SQLite file is created inside the image.
-# At runtime we mount a volume over server/prisma so the real DB lives on a
-# persistent disk; this in-image migrate just guarantees schema.sql exists.
-RUN cd server && npx prisma migrate deploy
-
-# Seed a default tournament so first boot isn't an empty setup screen.
-# Seed is idempotent (upsert by a fixed id) so re-runs are safe.
-RUN cd server && npx prisma db seed || true
 
 # =============================================================================
 # Stage 2 — slim runtime image with only what's needed to run.
@@ -82,9 +73,14 @@ ENV ADMIN_TOKEN_TTL=43200
 RUN mkdir -p /app/server/uploads
 VOLUME ["/app/server/prisma", "/app/server/uploads"]
 
+# Entrypoint runs Prisma migrate + seed on every start (idempotent), then
+# launches the server. The DB is created on the mounted volume at first boot.
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 EXPOSE 4000
 
-# Run the production server. It serves the API, Socket.IO and the built client
-# on a single port, so no separate web server is strictly required. For HTTPS
-# or a custom domain, put nginx/Caddy in front (see deploy.md).
-CMD ["npm", "start"]
+# Run the production server via the entrypoint. It serves the API, Socket.IO
+# and the built client on a single port, so no separate web server is strictly
+# required. For HTTPS or a custom domain, put nginx/Caddy in front (see DEPLOY.md).
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

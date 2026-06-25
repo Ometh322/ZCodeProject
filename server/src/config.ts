@@ -1,17 +1,14 @@
 import dotenv from "dotenv";
 import { fileURLToPath } from "node:url";
 
-// Load .env from the repository root. This file is server/src/config.ts, so the
-// root is two levels up. (Going up one level lands in server/, where only
-// Prisma's DATABASE_URL lives — that's why ADMIN_PASSWORD never matched.)
+// Try to load .env from the repository root (server/src → two levels up).
+// In production (Docker) there is no .env file — config comes from ENV vars
+// passed by the container runtime — so a missing file is normal, not an error.
+// We only log when a file IS found but fails to parse.
 const envPath = fileURLToPath(new URL("../../.env", import.meta.url));
-// `override: true` forces dotenv to replace any value already present in
-// process.env. Without it, a stale value shipped by the parent shell (or an
-// earlier dotenv load of a different file) silently wins and the .env value
-// is ignored.
 const result = dotenv.config({ path: envPath, override: true });
-if (result.error) {
-  console.error("[config] Failed to load .env from", envPath, result.error);
+if (result.error && result.error.code !== "ENOENT") {
+  console.error("[config] Failed to parse .env at", envPath, result.error);
 }
 
 function required(name: string, fallback?: string): string {
