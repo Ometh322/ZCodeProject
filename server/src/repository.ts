@@ -81,7 +81,7 @@ export async function loadState(): Promise<TournamentState | null> {
   });
   if (!t) return null;
 
-  const levels: Level[] = t.levels.map((l) => ({
+  const levels: Level[] = t.levels.map((l: (typeof t.levels)[number]) => ({
     id: l.id,
     order: l.order,
     durationSec: l.durationSec,
@@ -92,7 +92,7 @@ export async function loadState(): Promise<TournamentState | null> {
     breakTitle: l.breakTitle,
   }));
 
-  const players: Player[] = t.players.map((p) => ({
+  const players: Player[] = t.players.map((p: (typeof t.players)[number]) => ({
     id: p.id,
     name: p.name,
     stack: p.stack,

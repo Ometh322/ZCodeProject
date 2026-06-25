@@ -54,10 +54,12 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Copy the built server + the Prisma migration files + shared types source
-# (the compiled server imports @poker-club/shared via workspaces).
+# Copy the built server + shared (compiled to JS) + Prisma migrations.
+# shared/dist contains the compiled @poker-club/shared package that the server
+# imports at runtime — the .ts sources are NOT copied (node can't run them).
 COPY --from=builder /app/package.json /app/package-lock.json* ./
-COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/shared/package.json ./shared/
+COPY --from=builder /app/shared/dist ./shared/dist
 COPY --from=builder /app/server/package.json ./server/
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/server/prisma ./server/prisma
