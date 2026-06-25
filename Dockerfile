@@ -63,10 +63,9 @@ COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/server/prisma ./server/prisma
 # The compiled client build is served as static files by Express.
 COPY --from=builder /app/client/dist ./client/dist
-# node_modules (production deps only) — reinstall without devDeps.
+# node_modules — npm workspaces hoists everything into the root, so a single
+# copy of the root node_modules covers server + client + shared.
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/server/node_modules ./server/node_modules
-COPY --from=builder /app/shared/node_modules ./shared/node_modules
 
 # Default config. Override ADMIN_PASSWORD etc. via environment in docker-compose.
 ENV NODE_ENV=production
