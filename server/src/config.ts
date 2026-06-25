@@ -7,8 +7,13 @@ import { fileURLToPath } from "node:url";
 // We only log when a file IS found but fails to parse.
 const envPath = fileURLToPath(new URL("../../.env", import.meta.url));
 const result = dotenv.config({ path: envPath, override: true });
-if (result.error && result.error.code !== "ENOENT") {
-  console.error("[config] Failed to parse .env at", envPath, result.error);
+if (result.error) {
+  // A missing .env is expected in production (Docker passes config via ENV
+  // vars), so ENOENT is not an error. Only log genuine parse failures.
+  const code = (result.error as NodeJS.ErrnoException).code;
+  if (code !== "ENOENT") {
+    console.error("[config] Failed to parse .env at", envPath, result.error);
+  }
 }
 
 function required(name: string, fallback?: string): string {
