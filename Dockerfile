@@ -7,6 +7,12 @@ FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
+# DATABASE_URL must be present for Prisma CLI commands (migrate deploy, db seed)
+# during the build stage. SQLite path is relative to server/, matching the
+# runtime working directory. The actual DB file is created by the migrate step
+# below and at runtime lives on a mounted volume.
+ENV DATABASE_URL="file:./prisma/dev.db"
+
 # Install build toolchain (Prisma's engine needs it on slim images).
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
