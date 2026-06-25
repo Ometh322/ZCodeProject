@@ -11,12 +11,14 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy workspace manifests first for better layer caching.
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json* .npmrc ./
 COPY shared/package.json ./shared/
 COPY server/package.json ./server/
 COPY client/package.json ./client/
 
-RUN npm ci
+# `npm ci` with optional deps enabled so the correct esbuild/Prisma platform
+# binary for Linux is installed; win32-only optionals are skipped silently.
+RUN npm ci --include=optional
 
 # Copy the rest of the source.
 COPY . .
