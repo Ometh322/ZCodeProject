@@ -24,8 +24,8 @@ export function StatsBar({ state }: StatsBarProps) {
     playersRemaining > 0 ? Math.round(state.totalChips / playersRemaining) : 0;
 
   const rebuyMaster = [...state.players]
-    .filter((p) => p.rebuyCount > 0)
-    .sort((a, b) => b.rebuyCount - a.rebuyCount)[0];
+    .filter((p) => (p.rebuyCount + p.doubleRebuyCount * 2) > 0)
+    .sort((a, b) => (b.rebuyCount + b.doubleRebuyCount * 2) - (a.rebuyCount + a.doubleRebuyCount * 2))[0];
 
   return (
     <div className="flex w-full flex-col gap-3">
@@ -41,7 +41,7 @@ export function StatsBar({ state }: StatsBarProps) {
       />
       {rebuyMaster ? (
         <Stat
-          label={`Шейх дня · ${rebuyMaster.rebuyCount + rebuyMaster.doubleRebuyCount * 2}`}
+          label={`Шейх дня · ${rebuyMaster.doubleRebuyCount * 2 + rebuyMaster.rebuyCount}`}
           value={rebuyMaster.name}
           accent="text-gold-light"
         />
