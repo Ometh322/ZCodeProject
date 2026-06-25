@@ -1,0 +1,40 @@
+# Poker Club — production compose.
+#
+# Brings up the single app container with a persistent volume for the SQLite
+# database and uploaded files (logos, sounds). Suitable for a small VM (Yandex
+# Cloud Compute, 2 vCPU / 2-4 GB RAM).
+#
+# Usage:
+#   1. Copy .env.example to .env and set ADMIN_PASSWORD
+#   2. docker compose up -d --build
+#   3. App is on http://<server-ip>:4000
+#
+# For HTTPS / a domain, put nginx or Caddy in front (see deploy.md).
+
+services:
+  poker-club:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: poker-club
+    restart: unless-stopped
+    ports:
+      - "80:4000" # expose on the standard HTTP port
+    environment:
+      # IMPORTANT: change this! It's the admin password.
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:Texas108}
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: "file:./prisma/dev.db"
+      # Allow the browser to connect from any origin (we're behind the same host).
+      CORS_ORIGIN: "*"
+      ADMIN_TOKEN_TTL: "43200"
+    volumes:
+      # Persistent SQLite database — survives container rebuilds.
+      - poker-db:/app/server/prisma
+      # Uploaded logos + sounds.
+      - poker-uploads:/app/server/uploads
+
+volumes:
+  poker-db:
+  poker-uploads:
