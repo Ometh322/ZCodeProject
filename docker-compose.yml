@@ -22,7 +22,7 @@ services:
       - "80:4000" # expose on the standard HTTP port
     environment:
       # IMPORTANT: change this! It's the admin password.
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:Texas108}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:Texas108}$
       NODE_ENV: production
       PORT: 4000
       DATABASE_URL: "file:./prisma/dev.db"
