@@ -101,9 +101,13 @@ export function PlayerTable({
     await guarded(() => onClearAll());
   }
 
+  // Keep players in their registration order (the server returns them by
+  // createdAt). We only group eliminated players at the bottom — we do NOT
+  // re-sort by stack, otherwise a rebuy/addon would jump the player up the
+  // list, disorienting the operator mid-tournament.
   const sorted = [...state.players].sort((a, b) => {
     if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1;
-    return b.stack - a.stack;
+    return 0;
   });
 
   return (
