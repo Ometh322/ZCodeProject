@@ -34,6 +34,9 @@ export function ControlsBar({ state, send }: ControlsBarProps) {
 
       <SecondaryButton onClick={() => send("ADD_TIME", 60)}>+1 мин</SecondaryButton>
       <SecondaryButton onClick={() => send("ADD_TIME", 300)}>+5 мин</SecondaryButton>
+      <SecondaryButton onClick={() => send("ADD_TIME", -60)} disabled={state.remainingSeconds <= 0}>
+        −1 мин
+      </SecondaryButton>
 
       <div className="mx-2 h-8 w-px bg-white/10" />
 
@@ -74,14 +77,17 @@ function PrimaryButton({
 function SecondaryButton({
   children,
   onClick,
+  disabled,
 }: {
   children: React.ReactNode;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition hover:bg-white/10"
+      disabled={disabled}
+      className="rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </button>

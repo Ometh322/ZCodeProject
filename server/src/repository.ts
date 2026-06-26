@@ -525,3 +525,13 @@ export async function removePlayer(playerId: string): Promise<TournamentState> {
   if (!state) throw new Error("Failed to load state");
   return state;
 }
+
+/** Removes every player from the active tournament (full roster reset). */
+export async function removeAllPlayers(): Promise<TournamentState> {
+  const t = await getActiveTournament();
+  if (!t) throw new Error("No active tournament");
+  await prisma.player.deleteMany({ where: { tournamentId: t.id } });
+  const state = await loadState();
+  if (!state) throw new Error("Failed to load state");
+  return state;
+}

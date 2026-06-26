@@ -123,6 +123,14 @@ export const api = {
     });
   },
 
+  /** Removes every player from the active tournament (full roster reset). */
+  removeAllPlayers(): Promise<TournamentState> {
+    return request<TournamentState>("/api/tournament/players", {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+  },
+
   /** Uploads the club logo. Uses FormData, so no JSON content-type. */
   async uploadLogo(file: File): Promise<{ logoImage: string }> {
     const form = new FormData();

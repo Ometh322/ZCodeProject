@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as XLSX from "xlsx";
 import type { Player, TournamentState } from "@poker-club/shared";
 import { formatChips } from "../format";
 
@@ -10,6 +11,8 @@ interface PlayerTableProps {
   onRebuy: (id: string) => Promise<void>;
   onDoubleRebuy: (id: string) => Promise<void>;
   onAddon: (id: string) => Promise<void>;
+  /** Clear the entire roster (with confirmation handled by the caller). */
+  onClearAll: () => Promise<void>;
 }
 
 /**
@@ -31,6 +34,7 @@ export function PlayerTable({
   onRebuy,
   onDoubleRebuy,
   onAddon,
+  onClearAll,
 }: PlayerTableProps) {
   const [newName, setNewName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +66,41 @@ export function PlayerTable({
     }
   }
 
+  /** Export the full roster to an .xlsx file with all player fields. */
+  function handleExportExcel() {
+    if (state.players.length === 0) return;
+    const rows = state.players.map((p, i) => ({
+      "№": i + 1,
+      "Игрок": p.name,
+      "Стек": p.stack,
+      "Стоимость": p.paidAmount,
+      "Внесено": p.paidCash,
+      "Долг": p.paidAmount - p.paidCash,
+      "Ребаи": p.rebuyCount,
+      "Двойные ребаи": p.doubleRebuyCount,
+      "Аддоны": p.addonCount,
+      "Баунти": p.bountyCount,
+      "Выбыл": p.eliminated ? "Да" : "Нет",
+      "Место": p.eliminationOrder ?? "",
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Игроки");
+    const date = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `players-${date}.xlsx`);
+  }
+
+  async function handleClearAll() {
+    if (state.players.length === 0) return;
+    if (
+      !confirm(
+        `Удалить ВСЕХ игроков (${state.players.length})? Это действие необратимо.`,
+      )
+    )
+      return;
+    await guarded(() => onClearAll());
+  }
+
   const sorted = [...state.players].sort((a, b) => {
     if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1;
     return b.stack - a.stack;
@@ -76,6 +115,24 @@ export function PlayerTable({
             ({state.players.filter((p) => !p.eliminated).length} в игре)
           </span>
         </h2>
+        {state.players.length > 0 && (
+          <div className="flex gap-2">
+            <button
+              onClick={handleExportExcel}
+              className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/10"
+              title="Выгрузить список игроков в Excel"
+            >
+              ⬇ Excel
+            </button>
+            <button
+              onClick={handleClearAll}
+              className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/20"
+              title="Удалить всех игроков"
+            >
+              🗑 Очистить
+            </button>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleAdd} className="mb-4 flex gap-2">

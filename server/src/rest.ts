@@ -11,6 +11,7 @@ import {
   applyDoubleRebuy,
   applyRebuy,
   loadState,
+  removeAllPlayers,
   removePlayer,
   setLogoImage,
   setSoundAlert,
@@ -222,6 +223,17 @@ export function createApiRouter(engine: TimerEngine, upload: multer.Multer): Rou
   router.delete("/players/:id", async (req, res) => {
     try {
       await removePlayer(req.params.id);
+      await engine.sync();
+      res.json(await loadState());
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  // Clear the entire roster of the active tournament.
+  router.delete("/tournament/players", async (_req, res) => {
+    try {
+      await removeAllPlayers();
       await engine.sync();
       res.json(await loadState());
     } catch (err) {

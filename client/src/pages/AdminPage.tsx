@@ -400,6 +400,9 @@ export function AdminPage() {
         onAddon={async (id) => {
           await api.addon(id);
         }}
+        onClearAll={async () => {
+          await api.removeAllPlayers();
+        }}
       />
     </div>
   );
