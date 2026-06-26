@@ -19,7 +19,7 @@ services:
     container_name: poker-club
     restart: unless-stopped
     ports:
-      - "80:4000" # expose on the standard HTTP port
+      - "8080:4000" # expose on the standard HTTP port
     environment:
       # IMPORTANT: change this! It's the admin password.
       ADMIN_PASSWORD: Texas108
