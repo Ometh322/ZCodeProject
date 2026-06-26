@@ -8,17 +8,13 @@
   #root {
     @apply bg-felt-dark;
     height: 100%;
-    /* The display page must never scroll — it's a fixed full-viewport kiosk
-       screen. overflow: hidden on the root chain guarantees no scrollbar even
-       if a child briefly overflows during a state transition. */
-    overflow: hidden;
+    margin: 0;
   }
 
   body {
     @apply font-sans text-slate-100 antialiased;
     /* Montserrat is the default UI face (see tailwind.config.js → font-sans). */
     font-family: "Montserrat", "Inter", ui-sans-serif, system-ui, sans-serif;
-    margin: 0;
   }
 }
 

@@ -17,9 +17,12 @@ function AppRoutes() {
   const { isAuthenticated } = useAuth();
   return (
     <Routes>
+      {/* Display is a standalone fullscreen route — NOT wrapped in <App>, so it
+          gets no nav bar and no min-h-screen wrapper. This guarantees it fills
+          the exact viewport with no scrollbar. */}
+      <Route path="/display" element={<DisplayPage />} />
       <Route path="/" element={<App />}>
         <Route index element={<Navigate to="/display" replace />} />
-        <Route path="display" element={<DisplayPage />} />
         <Route
           path="login"
           element={
