@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useTournamentState } from "../useTournamentState";
 import { useTournamentAlerts } from "../hooks/useTournamentAlerts";
 import { useDisplaySizes } from "../hooks/useDisplaySizes";
@@ -30,8 +31,29 @@ import type { Level } from "@poker-club/shared";
  *   - Background is charcoal (#0B0B10), not pure black, so gold reads richer.
  */
 export function DisplayPage() {
-  const { state, connected } = useTournamentState(false);
+  // If the admin logged in on this device, their auth token lives in
+  // localStorage. We connect the socket with admin privileges so the Space-bar
+  // pause/resume hotkey works — but only on a device that was previously
+  // authenticated. Public kiosks have no token and stay read-only.
+  const isAdminDevice = Boolean(localStorage.getItem("adminToken"));
+  const { state, connected, send } = useTournamentState(isAdminDevice);
   const alerts = useTournamentAlerts(state);
+
+  // Space-bar hotkey: toggle pause/resume. Ignored when typing in an input
+  // (e.g. if an admin panel is somehow open on the same tab).
+  useEffect(() => {
+    if (!isAdminDevice) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space") return;
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      e.preventDefault();
+      const running = state?.status === "running";
+      send(running ? "PAUSE" : "RESUME");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isAdminDevice, state?.status, send]);
 
   if (!state) {
     return (
