@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTournamentState } from "../useTournamentState";
 import { useTournamentAlerts } from "../hooks/useTournamentAlerts";
 import { useDisplaySizes } from "../hooks/useDisplaySizes";
@@ -35,7 +35,24 @@ export function DisplayPage() {
   // localStorage. We connect the socket with admin privileges so the Space-bar
   // pause/resume hotkey works — but only on a device that was previously
   // authenticated. Public kiosks have no token and stay read-only.
-  const isAdminDevice = Boolean(localStorage.getItem("adminToken"));
+  //
+  // This is reactive: we listen for the browser `storage` event (fired when
+  // another tab logs in/out) and re-check on window focus, so a login in a
+  // different tab is picked up without reloading the display page.
+  const [isAdminDevice, setIsAdminDevice] = useState(
+    () => Boolean(localStorage.getItem("adminToken")),
+  );
+  useEffect(() => {
+    const check = () =>
+      setIsAdminDevice(Boolean(localStorage.getItem("adminToken")));
+    window.addEventListener("storage", check);
+    window.addEventListener("focus", check);
+    return () => {
+      window.removeEventListener("storage", check);
+      window.removeEventListener("focus", check);
+    };
+  }, []);
+
   const { state, connected, send } = useTournamentState(isAdminDevice);
   const alerts = useTournamentAlerts(state);
 
