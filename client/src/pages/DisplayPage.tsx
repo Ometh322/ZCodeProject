@@ -56,6 +56,21 @@ export function DisplayPage() {
   const { state, connected, send } = useTournamentState(isAdminDevice);
   const alerts = useTournamentAlerts(state);
 
+  // Detect mobile viewport for a simplified, single-column layout. Phones get
+  // name + level + timer + "Перерыв через" only. Must be declared BEFORE any
+  // early return — React Hooks require all hooks to run unconditionally.
+  const [isMobile, setIsMobile] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 1023px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const handler = () => setIsMobile(mq.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   // Space-bar hotkey: toggle pause/resume. Ignored when typing in an input
   // (e.g. if an admin panel is somehow open on the same tab).
   useEffect(() => {
@@ -84,21 +99,6 @@ export function DisplayPage() {
   const nextLevel = state.levels[state.currentLevelIndex + 1];
   const paused = state.status === "paused" || state.status === "setup";
   const untilBreak = secondsUntilNextBreak(state);
-
-  // Detect mobile viewport for a simplified, single-column layout. Phones get
-  // name + level + timer + "Перерыв через" only — stats and side panels would
-  // never fit and just clutter the small screen.
-  const [isMobile, setIsMobile] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 1023px)").matches,
-  );
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1023px)");
-    const handler = () => setIsMobile(mq.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
 
   // The blinds text currently shown — used as the width probe for sizing.
   const blindsText = currentLevel
