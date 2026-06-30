@@ -5,9 +5,9 @@ import { useDisplaySizes } from "../hooks/useDisplaySizes";
 import { Timer } from "../components/Timer";
 import { BlindsCard } from "../components/BlindsCard";
 import { StatsBar } from "../components/StatsBar";
-import { formatBlinds, secondsUntilNextBreak } from "../format";
+import { formatBlinds, formatClock, secondsUntilNextBreak } from "../format";
 import type { DisplaySizes } from "../hooks/useDisplaySizes";
-import type { Level } from "@poker-club/shared";
+import type { Level, TournamentState } from "@poker-club/shared";
 
 /**
  * Full-screen tournament display, meant to be left open on a TV or projector
@@ -85,12 +85,45 @@ export function DisplayPage() {
   const paused = state.status === "paused" || state.status === "setup";
   const untilBreak = secondsUntilNextBreak(state);
 
+  // Detect mobile viewport for a simplified, single-column layout. Phones get
+  // name + level + timer + "Перерыв через" only — stats and side panels would
+  // never fit and just clutter the small screen.
+  const [isMobile, setIsMobile] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 1023px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const handler = () => setIsMobile(mq.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   // The blinds text currently shown — used as the width probe for sizing.
   const blindsText = currentLevel
     ? currentLevel.isBreak
       ? currentLevel.breakTitle || "Перерыв"
       : formatBlinds(currentLevel.smallBlind, currentLevel.bigBlind, currentLevel.isBreak)
     : "—";
+
+  if (isMobile) {
+    return (
+      <MobileDisplay
+        state={state}
+        connected={connected}
+        level={currentLevel}
+        levelIndex={state.currentLevelIndex}
+        nextLevel={nextLevel}
+        untilBreak={untilBreak}
+        paused={paused}
+        isAdminDevice={isAdminDevice}
+        alertsEnabled={alerts.enabled}
+        onEnableSound={alerts.enable}
+        onTogglePause={() => send(state.status === "running" ? "PAUSE" : "RESUME")}
+      />
+    );
+  }
 
   return (
     <div className="relative flex h-dvh flex-col overflow-hidden bg-felt-dark">
@@ -310,3 +343,146 @@ function SoundToggle({
 
 // Re-export the sizes type so consumers don't need to import from the hook.
 export type { DisplaySizes };
+
+/**
+ * Mobile display — a simplified single-column layout for phones.
+ *
+ * Shows only: club logo/name, current level (blinds or break title), the timer
+ * and a "Перерыв через" line (only when the next break is titled
+ * "Аддонный перерыв"). Stats and side panels are hidden — they'd never fit and
+ * would just clutter a small screen. Tap anywhere toggles pause on admin
+ * devices; a sound toggle is rendered if sound hasn't been unlocked yet.
+ */
+function MobileDisplay({
+  state,
+  connected,
+  level,
+  levelIndex,
+  nextLevel,
+  untilBreak,
+  paused,
+  isAdminDevice,
+  alertsEnabled,
+  onEnableSound,
+  onTogglePause,
+}: {
+  state: TournamentState;
+  connected: boolean;
+  level: Level | undefined;
+  levelIndex: number;
+  nextLevel: Level | undefined;
+  untilBreak: number | null;
+  paused: boolean;
+  isAdminDevice: boolean;
+  alertsEnabled: boolean;
+  onEnableSound: () => void;
+  onTogglePause: () => void;
+}) {
+  const isBreak = level?.isBreak ?? false;
+  // Only show the break countdown when the upcoming break is the addon break.
+  const nextIsAddonBreak =
+    nextLevel?.isBreak && (nextLevel.breakTitle || "Перерыв") === "Аддонный перерыв";
+  const showBreakCountdown = nextIsAddonBreak && untilBreak !== null;
+
+  // Count playing levels for the "Уровень N" label.
+  let gameNumber = 0;
+  for (let i = 0; i <= levelIndex && i < state.levels.length; i++) {
+    if (!state.levels[i].isBreak) gameNumber += 1;
+  }
+
+  return (
+    <div
+      className="relative flex h-dvh flex-col items-center justify-between overflow-hidden bg-felt-dark px-4 py-8"
+      // Tap-to-toggle on admin devices mirrors the Space-bar hotkey.
+      onClick={isAdminDevice ? onTogglePause : undefined}
+    >
+      {/* Connection status (top-right). */}
+      <div
+        className={`absolute right-4 top-4 flex items-center gap-1 text-xs ${
+          connected ? "text-gold" : "text-red-400"
+        }`}
+      >
+        <span
+          className={`inline-block h-2 w-2 rounded-full ${
+            connected ? "bg-gold" : "animate-pulse bg-red-500"
+          }`}
+        />
+      </div>
+
+      {/* Sound toggle (top-left) — only before unlock. */}
+      {!alertsEnabled && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEnableSound();
+          }}
+          className="absolute left-4 top-4 animate-pulse rounded border border-gold bg-gold/20 px-2 py-1 text-xs text-gold"
+        >
+          🔊 Звук
+        </button>
+      )}
+
+      {/* Tournament name. */}
+      <h1 className="text-gold-gradient glow-gold mt-6 text-center font-display text-2xl font-bold tracking-[0.05em]">
+        {state.name}
+      </h1>
+
+      {/* Club emblem (if uploaded). */}
+      {state.logoImage && (
+        <img
+          src={state.logoImage}
+          alt=""
+          className="my-2 h-20 w-20 rounded-full object-cover shadow-[0_0_0_2px_rgba(212,175,55,0.6)]"
+        />
+      )}
+
+      {/* Level counter. */}
+      {isBreak ? (
+        <div className="text-center font-heading text-base font-medium uppercase tracking-[0.3em] text-gold">
+          {level?.breakTitle || "Перерыв"}
+        </div>
+      ) : (
+        <div className="text-center font-heading text-base font-medium uppercase tracking-[0.3em] text-gold">
+          Уровень {gameNumber}
+        </div>
+      )}
+
+      {/* Blinds / break title — large. */}
+      <div
+        className={`nums font-numeric text-center text-5xl font-extrabold leading-none ${
+          isBreak ? "text-gold glow-gold" : "text-white glow-gold-soft"
+        }`}
+      >
+        {isBreak
+          ? level?.breakTitle || "Перерыв"
+          : level
+            ? formatBlinds(level.smallBlind, level.bigBlind, level.isBreak)
+            : "—"}
+      </div>
+
+      {/* Timer — the focal point of the mobile screen. */}
+      <div
+        className={`nums font-numeric text-7xl font-extrabold leading-none ${
+          paused ? "animate-pulse text-gold glow-gold" : "text-white glow-gold-soft"
+        }`}
+      >
+        {formatClock(state.remainingSeconds)}
+      </div>
+      <div className="font-heading text-xs font-medium uppercase tracking-[0.3em] text-gold/60">
+        {paused ? "Пауза" : "До следующего уровня"}
+      </div>
+
+      {/* Break countdown — only for the addon break. */}
+      {showBreakCountdown && (
+        <div className="mb-4 rounded-xl border border-gold/20 bg-black/40 px-4 py-2 text-center">
+          <div className="font-heading text-xs font-medium uppercase tracking-widest text-gold/60">
+            Аддонный перерыв через
+          </div>
+          <div className="nums font-numeric mt-0.5 text-2xl font-bold text-gold">
+            {formatClock(untilBreak!)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
