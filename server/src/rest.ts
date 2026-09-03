@@ -163,19 +163,18 @@ export function createApiRouter(engine: TimerEngine, upload: multer.Multer): Rou
     }
   });
 
-  // Custom display layout (drag-n-drop editor): save positions.
+  // Custom display layout (drag-n-drop editor): save block geometry.
   router.put("/tournament/layout", async (req, res) => {
     const cfg = req.body as LayoutConfig;
-    const required = ["name", "logo", "blinds", "timer", "stats", "panels"] as const;
+    const isItem = (v: unknown): v is { x: number; y: number; w: number; h: number } =>
+      Boolean(v) &&
+      typeof v === "object" &&
+      ["x", "y", "w", "h"].every((f) => typeof (v as Record<string, unknown>)[f] === "number");
     const valid =
       cfg &&
       typeof cfg === "object" &&
-      required.every(
-        (k) =>
-          cfg[k] &&
-          typeof cfg[k].x === "number" &&
-          typeof cfg[k].y === "number" &&
-          typeof cfg[k].scale === "number",
+      ["name", "logo", "blinds", "timer", "stats", "panels"].every((k) =>
+        isItem((cfg as unknown as Record<string, unknown>)[k]),
       );
     if (!valid) {
       res.status(400).json({ error: "Invalid layout config" });

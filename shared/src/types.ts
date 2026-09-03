@@ -108,15 +108,17 @@ export interface TournamentState {
 }
 
 /**
- * A single element's placement on the display canvas: position in pixels from
- * the top-left corner of the screen (whole multiples of 8 — pixel-perfect,
- * snapped by the layout editor) plus a visual scale multiplier (1 = native
- * size, stepped in 5% increments by the resize handle).
+ * A single block's placement on the display canvas: position and size in
+ * pixels from the top-left corner of the screen. All values are whole
+ * multiples of 8 (pixel-perfect, snapped by the layout editor). The block is
+ * a FIXED rectangle — its content is scaled and centered to fit inside
+ * (see FitBox), never the other way around.
  */
 export interface LayoutItem {
   x: number;
   y: number;
-  scale: number;
+  w: number;
+  h: number;
 }
 
 /**

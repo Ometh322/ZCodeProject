@@ -2,30 +2,24 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { LayoutConfig, LayoutItem } from "@poker-club/shared";
 import { api } from "../api";
+import { FitBox } from "./FitBox";
 
 /**
  * Drag-n-drop + resize layout editor for the display screen.
  *
- * Design rules (per the club's pixel-perfect brief):
- *   - 8-pixel grid: every drag snaps to multiples of 8px; all coordinates are
- *     whole integers, so the saved layout renders identically on every screen.
- *   - Resize: each selected element has a bottom-right handle; dragging it
- *     changes a visual scale multiplier in 5% steps (CSS transform, so the
- *     document flow is never disturbed).
- *   - The visual grid overlay (8px fine lines, stronger every 64px) makes the
- *     snapping legible while arranging elements.
- *   - The bottom toolbar exposes numeric X/Y / size-% fields per element plus
- *     the side margin — two-way synced with dragging.
+ * Every block is a FIXED rectangle {x, y, w, h} snapped to the 8px grid:
+ *   - Drag anywhere on a block moves it.
+ *   - The bottom-right handle resizes the rectangle (w/h).
+ *   - The content inside is scaled and centered by FitBox — it adapts to the
+ *     block, never the other way around, and re-fits automatically when the
+ *     tournament state changes (new blinds, timer digits, stats).
  *
- * Elements: the four center-column blocks (name, logo, blinds, timer) and the
- * two side rails (stats, info panels). In edit mode they all live on one
- * absolute-positioned canvas rooted at the screen container.
+ * The bottom toolbar exposes numeric X / Y / W / H fields per block plus the
+ * canvas side margin — two-way synced with dragging.
  */
 
 const GRID = 8;
-const SCALE_STEP = 0.05;
-const MIN_SCALE = 0.5;
-const MAX_SCALE = 3;
+const MIN_SIZE = 32;
 
 const ELEMENT_KEYS = [
   "name",
@@ -47,18 +41,20 @@ const ELEMENT_LABELS: Record<ElementKey, string> = {
 };
 
 const snap = (v: number): number => Math.round(v / GRID) * GRID;
-const snapScale = (v: number): number =>
-  Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(v / SCALE_STEP) * SCALE_STEP));
 
-const DEFAULT_ITEM: LayoutItem = { x: 0, y: 0, scale: 1 };
+const DEFAULT_ITEM: LayoutItem = { x: 0, y: 0, w: 320, h: 160 };
 
-/** Backfills a persisted config so every field exists (older saves may lack
- *  scale or the side-column keys). */
+/**
+ * Backfills a persisted config. Configs saved by the previous editor version
+ * (position + scale, no w/h) can't be converted without knowing the content
+ * size, so their blocks get sensible defaults — the operator re-saves once.
+ */
 function normalizeConfig(raw: LayoutConfig | null): LayoutConfig {
   const item = (v: Partial<LayoutItem> | undefined): LayoutItem => ({
     x: v?.x ?? DEFAULT_ITEM.x,
     y: v?.y ?? DEFAULT_ITEM.y,
-    scale: v?.scale ?? 1,
+    w: v?.w ?? DEFAULT_ITEM.w,
+    h: v?.h ?? DEFAULT_ITEM.h,
   });
   return {
     name: item(raw?.name),
@@ -72,12 +68,12 @@ function normalizeConfig(raw: LayoutConfig | null): LayoutConfig {
 }
 
 interface LayoutEditorProps {
-  /** Persisted config (null = first visit, positions measured from the flow). */
+  /** Persisted config (null = first visit, geometry measured from the flow). */
   initial: LayoutConfig | null;
   /** Rendered blocks by key. */
   children: Record<ElementKey, ReactNode>;
   /** Ref for the positioning canvas (the screen container). */
-  containerRef: React.RefObject<HTMLElement | null>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   onExit: () => void;
 }
 
@@ -101,8 +97,8 @@ export function LayoutEditor({
   const [marginX, setMarginX] = useState(initial?.marginX ?? 24);
   const [selected, setSelected] = useState<ElementKey>("name");
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  // First visit without a persisted config: render children in the normal flow,
-  // measure, then switch to the absolute canvas.
+  // First visit without a usable persisted config: render children in the
+  // normal flow, measure their boxes, then switch to the fixed canvas.
   const [ready, setReady] = useState(initial !== null);
   const measured = useRef(false);
 
@@ -123,7 +119,12 @@ export function LayoutEditor({
       els.forEach((el) => {
         const key = el.dataset.layoutEl as ElementKey;
         if (key) {
-          next[key] = { ...next[key], x: snap(el.offsetLeft), y: snap(el.offsetTop) };
+          next[key] = {
+            x: snap(el.offsetLeft),
+            y: snap(el.offsetTop),
+            w: snap(Math.max(MIN_SIZE, el.offsetWidth)),
+            h: snap(Math.max(MIN_SIZE, el.offsetHeight)),
+          };
         }
       });
       return next;
@@ -145,22 +146,28 @@ export function LayoutEditor({
     [containerRef],
   );
 
-  const scaleItem = useCallback((key: ElementKey, dScale: number, base: LayoutItem) => {
-    setItems((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], scale: snapScale(base.scale + dScale) },
-    }));
-  }, []);
+  const sizeItem = useCallback(
+    (key: ElementKey, dx: number, dy: number, base: LayoutItem) => {
+      setItems((prev) => {
+        const w = Math.max(MIN_SIZE, snap(base.w + dx));
+        const h = Math.max(MIN_SIZE, snap(base.h + dy));
+        return { ...prev, [key]: { ...prev[key], w, h } };
+      });
+    },
+    [],
+  );
 
-  const setField = (key: ElementKey, field: "x" | "y" | "scale", raw: string) => {
-    const v = Number(raw);
+  const setField = (
+    key: ElementKey,
+    field: "x" | "y" | "w" | "h",
+    raw: string,
+  ) => {
+    let v = Number(raw);
     if (Number.isNaN(v)) return;
+    if (field === "w" || field === "h") v = Math.max(MIN_SIZE, v);
     setItems((prev) => ({
       ...prev,
-      [key]:
-        field === "scale"
-          ? { ...prev[key], scale: snapScale(v) }
-          : { ...prev[key], [field]: snap(v) },
+      [key]: { ...prev[key], [field]: snap(v) },
     }));
   };
 
@@ -210,16 +217,16 @@ export function LayoutEditor({
             </div>
           ))
         : ELEMENT_KEYS.map((key) => (
-            <DraggableBox
+            <ResizableBox
               key={key}
               item={items[key]}
               selected={selected === key}
               onSelect={() => setSelected(key)}
               onDrag={(dx, dy, base) => moveItem(key, dx, dy, base)}
-              onResize={(dScale, base) => scaleItem(key, dScale, base)}
+              onResize={(dx, dy, base) => sizeItem(key, dx, dy, base)}
             >
               {children[key]}
-            </DraggableBox>
+            </ResizableBox>
           ))}
 
       {/* Toolbar. */}
@@ -244,35 +251,23 @@ export function LayoutEditor({
               >
                 {ELEMENT_LABELS[key]}
               </button>
-              <input
-                type="number"
-                step={8}
-                min={0}
-                value={items[key].x}
-                onChange={(e) => setField(key, "x", e.target.value)}
-                className="w-14 rounded border border-white/15 bg-black/40 px-1.5 py-1 text-smoke"
-                aria-label={`${ELEMENT_LABELS[key]} X`}
-              />
-              <input
-                type="number"
-                step={8}
-                min={0}
-                value={items[key].y}
-                onChange={(e) => setField(key, "y", e.target.value)}
-                className="w-14 rounded border border-white/15 bg-black/40 px-1.5 py-1 text-smoke"
-                aria-label={`${ELEMENT_LABELS[key]} Y`}
-              />
-              <input
-                type="number"
-                step={5}
-                min={50}
-                max={300}
-                value={Math.round(items[key].scale * 100)}
-                onChange={(e) => setField(key, "scale", String(Number(e.target.value) / 100))}
-                className="w-16 rounded border border-gold/25 bg-black/40 px-1.5 py-1 text-gold"
-                aria-label={`${ELEMENT_LABELS[key]} размер %`}
-                title="Размер, %"
-              />
+              {(["x", "y", "w", "h"] as const).map((f) => (
+                <input
+                  key={f}
+                  type="number"
+                  step={8}
+                  min={0}
+                  value={items[key][f]}
+                  onChange={(e) => setField(key, f, e.target.value)}
+                  className={`w-14 rounded border px-1.5 py-1 text-smoke ${
+                    f === "w" || f === "h"
+                      ? "border-gold/25 text-gold"
+                      : "border-white/15"
+                  } bg-black/40`}
+                  aria-label={`${ELEMENT_LABELS[key]} ${f.toUpperCase()}`}
+                  title={f === "w" ? "Ширина" : f === "h" ? "Высота" : f.toUpperCase()}
+                />
+              ))}
             </div>
           ))}
 
@@ -322,11 +317,11 @@ export function LayoutEditor({
 }
 
 /**
- * One absolutely-positioned, draggable + resizable wrapper.
- * Drag moves {x, y} (8px snap); the bottom-right handle changes scale (5%
- * steps) via CSS transform so the flow is never disturbed.
+ * One fixed-rectangle block: drag moves {x, y}; the bottom-right handle
+ * changes {w, h}. The content is scaled and centered inside via FitBox, so
+ * the block's geometry is fully independent of its content.
  */
-function DraggableBox({
+function ResizableBox({
   item,
   selected,
   onSelect,
@@ -338,7 +333,7 @@ function DraggableBox({
   selected: boolean;
   onSelect: () => void;
   onDrag: (dx: number, dy: number, base: LayoutItem) => void;
-  onResize: (dScale: number, base: LayoutItem) => void;
+  onResize: (dx: number, dy: number, base: LayoutItem) => void;
   children: ReactNode;
 }) {
   const startRef = useRef<{
@@ -356,21 +351,13 @@ function DraggableBox({
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   }
 
-  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    begin(e, "move");
-  }
-
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
     const s = startRef.current;
     if (!s) return;
     const dx = e.clientX - s.px;
     const dy = e.clientY - s.py;
-    if (s.mode === "move") {
-      onDrag(dx, dy, s.base);
-    } else {
-      // Horizontal drag maps to scale: 200px ≈ +100%.
-      onResize(dx / 200, s.base);
-    }
+    if (s.mode === "move") onDrag(dx, dy, s.base);
+    else onResize(dx, dy, s.base);
   }
 
   function endDrag() {
@@ -380,26 +367,23 @@ function DraggableBox({
   return (
     <div
       data-layout-el
-      onPointerDown={handlePointerDown}
+      onPointerDown={(e) => begin(e, "move")}
       onPointerMove={handlePointerMove}
       onPointerUp={endDrag}
       className={`absolute z-10 cursor-grab touch-none select-none active:cursor-grabbing ${
         selected ? "outline-2 outline-dashed outline-gold/80" : ""
       }`}
-      style={{
-        left: `${item.x}px`,
-        top: `${item.y}px`,
-        transform: `scale(${item.scale})`,
-        transformOrigin: "top left",
-      }}
+      style={{ left: item.x, top: item.y }}
     >
-      {children}
+      <FitBox w={item.w} h={item.h} debug>
+        {children}
+      </FitBox>
       {/* Resize handle — visible on the selected block. */}
       {selected && (
         <div
           onPointerDown={(e) => begin(e, "resize")}
-          className="absolute -bottom-1 -right-1 h-4 w-4 cursor-nwse-resize rounded-sm border border-black/50 bg-gold"
-          title="Изменить размер"
+          className="absolute -bottom-1 -right-1 z-20 h-4 w-4 cursor-nwse-resize rounded-sm border border-black/50 bg-gold"
+          title="Изменить размер блока"
         />
       )}
     </div>

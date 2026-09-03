@@ -7,6 +7,7 @@ import { Timer } from "../components/Timer";
 import { BlindsCard } from "../components/BlindsCard";
 import { StatsBar } from "../components/StatsBar";
 import { LayoutEditor } from "../components/LayoutEditor";
+import { FitBox } from "../components/FitBox";
 import { formatBlinds, formatClock, secondsUntilNextBreak } from "../format";
 import type { DisplaySizes } from "../hooks/useDisplaySizes";
 import type { Level, TournamentState } from "@poker-club/shared";
@@ -209,7 +210,7 @@ export function DisplayPage() {
     );
   }
 
-  // ─── Custom saved layout: absolute positions + scale from the config. ─────
+  // ─── Custom saved layout: fixed rectangles, content auto-fits inside. ────
   if (layoutConfig) {
     const cfg = layoutConfig;
     return (
@@ -233,14 +234,11 @@ export function DisplayPage() {
           <div
             key={key}
             className="absolute"
-            style={{
-              left: item.x,
-              top: item.y,
-              transform: `scale(${item.scale ?? 1})`,
-              transformOrigin: "top left",
-            }}
+            style={{ left: item.x, top: item.y }}
           >
-            {blocks[key]}
+            <FitBox w={item.w} h={item.h}>
+              {blocks[key]}
+            </FitBox>
           </div>
         ))}
       </div>
