@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 # =============================================================================
 # Stage 1 — build the client (Vite) and the server (tsc) from source.
 # =============================================================================
@@ -22,9 +20,18 @@ COPY shared/package.json ./shared/
 COPY server/package.json ./server/
 COPY client/package.json ./client/
 
-# `npm ci` with optional deps enabled so the correct esbuild/Prisma platform
-# binary for Linux is installed; win32-only optionals are skipped silently.
-RUN npm ci --include=optional
+# Neutralize any stray npmrc settings before installing: `omit=dev` or
+# `production=true` silently skip devDependencies (prisma lives there) and
+# CLI --include=dev does NOT override them (verified experimentally).
+RUN printf 'optional=true\n' > .npmrc
+
+# `npm ci` with dev + optional deps enabled so the correct esbuild/Prisma
+# platform binary for Linux is installed; win32-only optionals are skipped.
+RUN npm ci --include=dev --include=optional
+
+# Fail loudly here instead of a cryptic "prisma: not found" later.
+RUN test -x node_modules/.bin/prisma \
+  || (echo '!!! prisma binary missing after npm ci — check .npmrc for omit=dev' && exit 1)
 
 # Copy the rest of the source.
 COPY . .
