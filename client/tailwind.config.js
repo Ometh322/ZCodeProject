@@ -4,45 +4,40 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // High-contrast antiqua for the tournament name + hero headings
-        // (the "luxury display" face). Used sparingly — only on the biggest
-        // text on screen.
-        display: ['"Playfair Display"', "Georgia", "serif"],
-        // Condensed uppercase sans-serif for section labels: BLINDS, TIME,
-        // PRIZE, СЛЕДУЮЩИЙ УРОВЕНЬ etc. Gives the structured, formal look of
-        // a casino/board layout without competing with the headline serif.
-        heading: ['"Oswald"', '"Arial Narrow"', "sans-serif"],
-        // Geometric sans for all numbers: timer, blinds, chip counts, prize
-        // pool. Montserrat has clean tabular figures and looks modern-premium
-        // at large sizes. The body/sans fallback is also Montserrat.
+        // Фирменный шрифт клуба ФЛЭШ — Science Gothic (variable 100..900).
+        // Используется для заголовков, эмблемы и лейблов.
+        display: ['"Science Gothic"', "Montserrat", "sans-serif"],
+        heading: ['"Science Gothic"', "Montserrat", "sans-serif"],
+        // Монтсерра для цифр: у него есть tabular figures, которые критичны
+        // для таймера и денежных сумм (цифры не «прыгают» по ширине).
         sans: ['"Montserrat"', "Inter", "system-ui", "sans-serif"],
         numeric: ['"Montserrat"', '"JetBrains Mono"', "monospace"],
-        // Kept for any legacy `font-mono` usage (admin code etc.).
         mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "monospace"],
       },
       colors: {
-        // Charcoal (not pure black) — gold reads richer on #14141A than on
-        // #000 and is gentler on the eyes in a dim club. `felt` is kept as the
-        // token name so existing bg-felt utilities keep working.
+        // Фирменная палитра клуба ФЛЭШ.
+        // PITCH BLACK #161008 — основной фон (тёплый глубокий чёрный).
         felt: {
-          DEFAULT: "#14141A",
-          dark: "#0B0B10",
-          light: "#1E1E26",
+          DEFAULT: "#1F1810",
+          dark: "#161008",
+          light: "#2A2117",
         },
+        // SUNFLOWER GOLD #FDC86C — фирменный акцент.
         gold: {
-          DEFAULT: "#D4AF37",
-          light: "#F5C518",
-          dark: "#A8862E",
+          DEFAULT: "#FDC86C",
+          light: "#FFE19D",
+          dark: "#D9A440",
         },
+        // WHITE SMOKE #F2F2F2 — фирменный цвет текста.
+        smoke: "#F2F2F2",
       },
       backgroundImage: {
-        // Diagonal gold sheen for the tournament name + hero accents.
+        // Диагональный градиент подсолнечного золота для названия и акцентов.
         "gold-gradient":
-          "linear-gradient(135deg, #A8862E 0%, #F5C518 45%, #D4AF37 60%, #A8862E 100%)",
+          "linear-gradient(135deg, #D9A440 0%, #FDC86C 45%, #FFE19D 60%, #D9A440 100%)",
       },
-      // Soft gold glow used as text-shadow / box-shadow on hero elements.
       boxShadow: {
-        "gold-glow": "0 0 24px rgba(212, 175, 55, 0.35)",
+        "gold-glow": "0 0 24px rgba(253, 200, 108, 0.35)",
       },
     },
   },

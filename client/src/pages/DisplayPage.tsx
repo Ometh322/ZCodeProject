@@ -235,9 +235,9 @@ function CenterColumn({
 }
 
 /**
- * The Poker Lounge club emblem. If a logo image is uploaded it is shown framed
+ * The ФЛЭШ club emblem. If a logo image is uploaded it is shown framed
  * in a thin gold ring; otherwise a CSS-only emblem renders the club name in
- * Playfair Display Bold with the gold gradient, flanked by card suits.
+ * Science Gothic with the SUNFLOWER GOLD gradient, flanked by lightning bolts.
  *
  * The size is driven by the adaptive `sizes.logo` value from useDisplaySizes
  * so the emblem scales with the available width.
@@ -255,8 +255,8 @@ function ClubEmblem({
     return (
       <img
         src={logoUrl}
-        alt="Poker Lounge"
-        className="rounded-full object-cover shadow-[0_0_0_3px_rgba(212,175,55,0.7),0_4px_24px_rgba(0,0,0,0.6)]"
+        alt="ФЛЭШ"
+        className="rounded-full object-cover shadow-[0_0_0_3px_rgba(253,200,108,0.7),0_4px_24px_rgba(0,0,0,0.6)]"
         style={{ height: `${size}px`, width: `${size}px` }}
       />
     );
@@ -268,19 +268,19 @@ function ClubEmblem({
           className="glow-gold-soft text-gold"
           style={{ fontSize: `${labelSize * 1.6}px` }}
         >
-          ♠
+          ⚡
         </span>
         <span
           className="text-gold-gradient glow-gold font-display font-bold tracking-[0.2em]"
           style={{ fontSize: `${labelSize * 1.6}px` }}
         >
-          POKER&nbsp;LOUNGE
+          ФЛЭШ
         </span>
         <span
           className="glow-gold-soft text-gold"
           style={{ fontSize: `${labelSize * 1.6}px` }}
         >
-          ♣
+          ⚡
         </span>
       </div>
       <div

@@ -39,27 +39,25 @@
     font-feature-settings: "tnum" 1;
   }
 
-  /* Gold gradient clipped to text. Apply on an element whose color we want   */
-  /* to become the diagonal gold sheen. Use alongside a transparent fallback. */
+  /* Gold gradient clipped to text — SUNFLOWER GOLD sheen for the ФЛЭШ brand. */
   .text-gold-gradient {
-    background: linear-gradient(135deg, #a8862e 0%, #f5c518 45%, #d4af37 60%, #a8862e 100%);
+    background: linear-gradient(135deg, #D9A440 0%, #FDC86C 45%, #FFE19D 60%, #D9A440 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
 
-  /* Restrained gold glow for hero text. Stack two soft shadows so the halo   */
-  /* is visible without making the glyph edges bleed. */
+  /* Restrained gold glow for hero text (SUNFLOWER GOLD #FDC86C). */
   .glow-gold {
     text-shadow:
-      0 0 18px rgba(212, 175, 55, 0.35),
+      0 0 18px rgba(253, 200, 108, 0.35),
       0 1px 2px rgba(0, 0, 0, 0.8);
   }
 
   /* Even softer glow for secondary gold accents (captions, stat values). */
   .glow-gold-soft {
-    text-shadow: 0 0 12px rgba(212, 175, 55, 0.22);
+    text-shadow: 0 0 12px rgba(253, 200, 108, 0.22);
   }
 }
 
