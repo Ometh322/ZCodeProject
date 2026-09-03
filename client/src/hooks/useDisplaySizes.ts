@@ -42,10 +42,10 @@ export function useDisplaySizes(
    *  the headline so it provably fits. */
   blindsText: string,
 ): {
-  containerRef: React.MutableRefObject<HTMLElement | null>;
+  containerRef: React.MutableRefObject<HTMLDivElement | null>;
   sizes: DisplaySizes;
 } {
-  const containerRef = useRef<HTMLElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [sizes, setSizes] = useState<DisplaySizes>({
     blinds: 96,
     timer: 96,
@@ -91,7 +91,14 @@ export function useDisplaySizes(
       // Derive the other sizes proportionally off the blinds size.
       const timerPx = Math.max(MIN_TIMER, blindsPx * 0.82);
       const titlePx = Math.max(MIN_TITLE, blindsPx * 0.58);
-      const logoPx = Math.max(MIN_LOGO, blindsPx * 1.5);
+      // Logo size is driven by the SCREEN, not the blinds font — a long blinds
+      // string used to shrink the logo into an afterthought. 33% of viewport
+      // height, capped at 60% of column width, keeps a 929×929 logo prominent
+      // on any display while guaranteeing the column still fits.
+      const logoPx = Math.max(
+        MIN_LOGO,
+        Math.min(available * 0.6, window.innerHeight * 0.33),
+      );
       const labelPx = Math.max(MIN_LABEL, blindsPx * 0.22);
 
       setSizes({

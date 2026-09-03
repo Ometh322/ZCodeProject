@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Player, PresetDefinition } from "@poker-club/shared";
 import { api } from "../api";
 import { useAuth } from "../auth/AuthContext";
+import { trimTransparent } from "../utils/trimImage";
 import { useTournamentState } from "../useTournamentState";
 import { formatBlinds, formatChips, formatClock } from "../format";
 import { ControlsBar } from "../components/ControlsBar";
@@ -122,7 +123,10 @@ export function AdminPage() {
     setUploadingLogo(true);
     setLogoError(null);
     try {
-      await api.uploadLogo(file);
+      // Auto-crop transparent margins so the artwork fills the uploaded file —
+      // otherwise empty padding eats display space on the hall screen.
+      const trimmed = await trimTransparent(file);
+      await api.uploadLogo(trimmed);
     } catch (err) {
       setLogoError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -203,12 +207,21 @@ export function AdminPage() {
             <div className="font-mono text-4xl font-bold text-white">
               {formatClock(state.remainingSeconds)}
             </div>
-            <button
-              onClick={handleLogout}
-              className="mt-2 text-sm text-slate-400 hover:text-white"
-            >
-              Выйти
-            </button>
+            <div className="mt-2 flex items-center justify-end gap-3">
+              <button
+                onClick={() => navigate("/display?edit=1")}
+                className="rounded border border-gold/40 bg-gold/10 px-3 py-1 text-sm text-gold transition hover:bg-gold/20"
+                title="Перетащить элементы экрана зала (шаг 8px)"
+              >
+                ✥ Редактировать макет
+              </button>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-slate-400 hover:text-white"
+              >
+                Выйти
+              </button>
+            </div>
           </div>
         </div>
 

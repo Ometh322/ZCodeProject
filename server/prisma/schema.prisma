@@ -48,6 +48,9 @@ model Tournament {
   addonCost         Int @default(0)
   // Maximum rebuys (single + double combined) per player. 0 = unlimited.
   maxRebuys         Int @default(0)
+  // Custom display-screen layout (JSON): per-element {x, y} positions snapped
+  // to the 8px grid + side margin. Null = default flex layout.
+  layoutConfig      String?
 
   levels   Level[]
   players  Player[]

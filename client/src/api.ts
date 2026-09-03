@@ -1,4 +1,5 @@
 import type {
+  LayoutConfig,
   LoginResponse,
   Player,
   PresetDefinition,
@@ -132,8 +133,7 @@ export const api = {
   },
 
   /** Uploads the club logo. Uses FormData, so no JSON content-type. */
-  async uploadLogo(file: File): Promise<{ logoImage: string }> {
-    const form = new FormData();
+  async uploadLogo(file: File): Promise<{ logoImage: string }> {    const form = new FormData();
     form.append("image", file);
     const res = await fetch(`${BASE}/api/tournament/logo`, {
       method: "POST",
@@ -185,5 +185,22 @@ export const api = {
         headers: authHeaders(),
       },
     );
+  },
+
+  /** Saves the drag-n-drop display layout. */
+  saveLayout(cfg: LayoutConfig): Promise<{ ok: true }> {
+    return request<{ ok: true }>("/api/tournament/layout", {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify(cfg),
+    });
+  },
+
+  /** Resets the display layout back to the default flex flow. */
+  resetLayout(): Promise<{ ok: true }> {
+    return request<{ ok: true }>("/api/tournament/layout", {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
   },
 };

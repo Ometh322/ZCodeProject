@@ -103,6 +103,36 @@ export interface TournamentState {
   addonCost: number;
   /** Maximum rebuys (single + double combined) per player. 0 = unlimited. */
   maxRebuys: number;
+  /** Custom display layout (drag-n-drop editor), or null for the default flex layout. */
+  layoutConfig: LayoutConfig | null;
+}
+
+/**
+ * A single element's placement on the display canvas: position in pixels from
+ * the top-left corner of the screen (whole multiples of 8 — pixel-perfect,
+ * snapped by the layout editor) plus a visual scale multiplier (1 = native
+ * size, stepped in 5% increments by the resize handle).
+ */
+export interface LayoutItem {
+  x: number;
+  y: number;
+  scale: number;
+}
+
+/**
+ * Custom display-screen layout produced by the drag-n-drop editor.
+ * Keys address the six draggable blocks: the four center-column elements
+ * plus the two side columns (stats rail and info panels).
+ */
+export interface LayoutConfig {
+  name: LayoutItem;
+  logo: LayoutItem;
+  blinds: LayoutItem;
+  timer: LayoutItem;
+  stats: LayoutItem;
+  panels: LayoutItem;
+  /** Horizontal side margin of the canvas, px (multiple of 8). */
+  marginX: number;
 }
 
 /** POST /api/login */

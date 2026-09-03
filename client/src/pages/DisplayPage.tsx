@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTournamentState } from "../useTournamentState";
 import { useTournamentAlerts } from "../hooks/useTournamentAlerts";
 import { useDisplaySizes } from "../hooks/useDisplaySizes";
 import { Timer } from "../components/Timer";
 import { BlindsCard } from "../components/BlindsCard";
 import { StatsBar } from "../components/StatsBar";
+import { LayoutEditor } from "../components/LayoutEditor";
 import { formatBlinds, formatClock, secondsUntilNextBreak } from "../format";
 import type { DisplaySizes } from "../hooks/useDisplaySizes";
 import type { Level, TournamentState } from "@poker-club/shared";
@@ -53,8 +55,27 @@ export function DisplayPage() {
     };
   }, []);
 
+  // Layout editor entry: /display?edit=1 (admin devices only). Uses the URL
+  // search param rather than a separate route so the editor renders the exact
+  // production screen; exiting just strips the param.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const editMode = searchParams.get("edit") === "1" && isAdminDevice;
+  function exitEdit() {
+    setSearchParams({}, { replace: true });
+  }
+
   const { state, connected, send } = useTournamentState(isAdminDevice);
   const alerts = useTournamentAlerts(state);
+
+  // Safe derivations BEFORE the early return — useDisplaySizes must run on
+  // every render (Rules of Hooks), even while the state is still loading.
+  const currentLevel = state?.levels[state.currentLevelIndex];
+  const blindsText = currentLevel
+    ? currentLevel.isBreak
+      ? currentLevel.breakTitle || "Перерыв"
+      : formatBlinds(currentLevel.smallBlind, currentLevel.bigBlind, currentLevel.isBreak)
+    : "—";
+  const { containerRef, sizes } = useDisplaySizes(blindsText);
 
   // Detect mobile viewport for a simplified, single-column layout. Phones get
   // name + level + timer + "Перерыв через" only. Must be declared BEFORE any
@@ -95,17 +116,10 @@ export function DisplayPage() {
     );
   }
 
-  const currentLevel = state.levels[state.currentLevelIndex];
   const nextLevel = state.levels[state.currentLevelIndex + 1];
   const paused = state.status === "paused" || state.status === "setup";
   const untilBreak = secondsUntilNextBreak(state);
-
-  // The blinds text currently shown — used as the width probe for sizing.
-  const blindsText = currentLevel
-    ? currentLevel.isBreak
-      ? currentLevel.breakTitle || "Перерыв"
-      : formatBlinds(currentLevel.smallBlind, currentLevel.bigBlind, currentLevel.isBreak)
-    : "—";
+  const layoutConfig = state.layoutConfig;
 
   if (isMobile) {
     return (
@@ -125,6 +139,115 @@ export function DisplayPage() {
     );
   }
 
+  // The six layout blocks. Center elements use the adaptive font sizes; the
+  // side rails render at their natural width (scaled by the layout config).
+  const blocks = {
+    name: (
+      <h1
+        className="text-gold-gradient glow-gold text-center font-display font-bold tracking-[0.08em]"
+        style={{ fontSize: `${sizes.title}px` }}
+      >
+        {state.name}
+      </h1>
+    ),
+    logo: (
+      <ClubEmblem
+        logoUrl={state.logoImage ?? undefined}
+        size={sizes.logo}
+        labelSize={sizes.label}
+      />
+    ),
+    blinds: (
+      <BlindsCard
+        level={currentLevel}
+        levelIndex={state.currentLevelIndex}
+        levels={state.levels}
+        nextLevel={nextLevel}
+        secondsUntilBreak={untilBreak}
+        layout="center"
+        centerFontSize={sizes.blinds}
+        labelFontSize={sizes.label}
+      />
+    ),
+    timer: (
+      <Timer
+        remainingSeconds={state.remainingSeconds}
+        paused={paused}
+        clockFontSize={sizes.timer}
+        labelFontSize={sizes.label}
+      />
+    ),
+    stats: <StatsBar state={state} />,
+    panels: (
+      <BlindsCard
+        level={currentLevel}
+        levelIndex={state.currentLevelIndex}
+        levels={state.levels}
+        nextLevel={nextLevel}
+        secondsUntilBreak={untilBreak}
+        layout="side"
+      />
+    ),
+  };
+
+  // ─── Layout editor: one free canvas with all six draggable blocks. ────────
+  if (editMode) {
+    return (
+      <div
+        ref={containerRef}
+        className="relative h-dvh overflow-hidden bg-felt-dark"
+        style={{ padding: `${snapPx(layoutConfig?.marginX ?? 24)}px` }}
+      >
+        <ConnectionDot connected={connected} />
+        <LayoutEditor
+          initial={layoutConfig}
+          children={blocks}
+          containerRef={containerRef}
+          onExit={exitEdit}
+        />
+      </div>
+    );
+  }
+
+  // ─── Custom saved layout: absolute positions + scale from the config. ─────
+  if (layoutConfig) {
+    const cfg = layoutConfig;
+    return (
+      <div
+        ref={containerRef}
+        className="relative h-dvh overflow-hidden bg-felt-dark"
+        style={{ padding: `${cfg.marginX}px` }}
+      >
+        <ConnectionDot connected={connected} />
+        <SoundToggle enabled={alerts.enabled} onEnable={alerts.enable} />
+        {(
+          [
+            ["name", cfg.name],
+            ["logo", cfg.logo],
+            ["blinds", cfg.blinds],
+            ["timer", cfg.timer],
+            ["stats", cfg.stats],
+            ["panels", cfg.panels],
+          ] as const
+        ).map(([key, item]) => (
+          <div
+            key={key}
+            className="absolute"
+            style={{
+              left: item.x,
+              top: item.y,
+              transform: `scale(${item.scale ?? 1})`,
+              transformOrigin: "top left",
+            }}
+          >
+            {blocks[key]}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ─── Default three-column grid. ────────────────────────────────────────────
   return (
     <div className="relative flex h-dvh flex-col overflow-hidden bg-felt-dark">
       <ConnectionDot connected={connected} />
@@ -139,99 +262,28 @@ export function DisplayPage() {
         </aside>
 
         {/* Center column: measured container drives the adaptive font sizes. */}
-        <CenterColumn
-          blindsText={blindsText}
-          name={state.name}
-          logoUrl={state.logoImage ?? undefined}
-          level={currentLevel}
-          levelIndex={state.currentLevelIndex}
-          levels={state.levels}
-          nextLevel={nextLevel}
-          secondsUntilBreak={untilBreak}
-          remainingSeconds={state.remainingSeconds}
-          paused={paused}
-        />
+        <div
+          ref={containerRef}
+          className="flex min-h-0 min-w-0 flex-col items-center justify-start gap-5 pt-2"
+        >
+          {blocks.name}
+          {blocks.logo}
+          {blocks.blinds}
+          {blocks.timer}
+        </div>
 
         {/* Right column: next level + break + ante side panels. */}
         <aside className="flex min-h-0 flex-col items-stretch justify-center gap-4">
-          <BlindsCard
-            level={currentLevel}
-            levelIndex={state.currentLevelIndex}
-            levels={state.levels}
-            nextLevel={nextLevel}
-            secondsUntilBreak={untilBreak}
-            layout="side"
-          />
+          {blocks.panels}
         </aside>
       </div>
     </div>
   );
 }
 
-/**
- * The measured center column. `useDisplaySizes` returns a ref to attach to the
- * wrapper div and a set of px sizes derived from the wrapper's current width.
- * Those sizes are passed down to the name, emblem, blinds headline and timer.
- */
-function CenterColumn({
-  blindsText,
-  name,
-  logoUrl,
-  level,
-  levelIndex,
-  levels,
-  nextLevel,
-  secondsUntilBreak,
-  remainingSeconds,
-  paused,
-}: {
-  blindsText: string;
-  name: string;
-  logoUrl?: string;
-  level: Level | undefined;
-  levelIndex: number;
-  levels: Level[];
-  nextLevel: Level | undefined;
-  secondsUntilBreak: number | null;
-  remainingSeconds: number;
-  paused: boolean;
-}) {
-  const { containerRef, sizes } = useDisplaySizes(blindsText);
-
-  return (
-    <main
-      ref={containerRef}
-      className="flex min-h-0 min-w-0 flex-col items-center justify-start gap-5 pt-2"
-    >
-      {/* Tournament name (Playfair Display Bold, gold gradient). Size derived
-          from the center column width so long names don't wrap either. */}
-      <h1
-        className="text-gold-gradient glow-gold text-center font-display font-bold tracking-[0.08em]"
-        style={{ fontSize: `${sizes.title}px` }}
-      >
-        {name}
-      </h1>
-
-      <ClubEmblem logoUrl={logoUrl} size={sizes.logo} labelSize={sizes.label} />
-
-      <BlindsCard
-        level={level}
-        levelIndex={levelIndex}
-        levels={levels}
-        nextLevel={nextLevel}
-        secondsUntilBreak={secondsUntilBreak}
-        layout="center"
-        centerFontSize={sizes.blinds}
-        labelFontSize={sizes.label}
-      />
-      <Timer
-        remainingSeconds={remainingSeconds}
-        paused={paused}
-        clockFontSize={sizes.timer}
-        labelFontSize={sizes.label}
-      />
-    </main>
-  );
+/** Local 8px snap helper (kept private to this module). */
+function snapPx(v: number): number {
+  return Math.round(v / 8) * 8;
 }
 
 /**
@@ -256,8 +308,11 @@ function ClubEmblem({
       <img
         src={logoUrl}
         alt="ФЛЭШ"
-        className="rounded-full object-cover shadow-[0_0_0_3px_rgba(253,200,108,0.7),0_4px_24px_rgba(0,0,0,0.6)]"
-        style={{ height: `${size}px`, width: `${size}px` }}
+        // Rectangular logo: width driven by viewport height (see
+        // useDisplaySizes), height follows the image's own aspect ratio —
+        // object-contain, never cropped.
+        className="object-contain drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)]"
+        style={{ width: `${size}px`, maxWidth: "100%", height: "auto" }}
       />
     );
   }

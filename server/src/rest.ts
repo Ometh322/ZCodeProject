@@ -13,12 +13,14 @@ import {
   loadState,
   removeAllPlayers,
   removePlayer,
+  setLayoutConfig,
   setLogoImage,
   setSoundAlert,
   updatePlayer,
   upsertTournament,
 } from "./repository.js";
 import type { SoundAlertType } from "./repository.js";
+import type { LayoutConfig } from "@poker-club/shared";
 
 /**
  * REST surface.
@@ -156,6 +158,44 @@ export function createApiRouter(engine: TimerEngine, upload: multer.Multer): Rou
       await setSoundAlert(type, null);
       await engine.sync();
       res.json({ type, path: null });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  // Custom display layout (drag-n-drop editor): save positions.
+  router.put("/tournament/layout", async (req, res) => {
+    const cfg = req.body as LayoutConfig;
+    const required = ["name", "logo", "blinds", "timer", "stats", "panels"] as const;
+    const valid =
+      cfg &&
+      typeof cfg === "object" &&
+      required.every(
+        (k) =>
+          cfg[k] &&
+          typeof cfg[k].x === "number" &&
+          typeof cfg[k].y === "number" &&
+          typeof cfg[k].scale === "number",
+      );
+    if (!valid) {
+      res.status(400).json({ error: "Invalid layout config" });
+      return;
+    }
+    try {
+      await setLayoutConfig(cfg);
+      await engine.sync();
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  // Reset the display layout back to the default flex flow.
+  router.delete("/tournament/layout", async (_req, res) => {
+    try {
+      await setLayoutConfig(null);
+      await engine.sync();
+      res.json({ ok: true });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
     }

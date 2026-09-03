@@ -133,7 +133,18 @@ export async function loadState(): Promise<TournamentState | null> {
     addonChips: t.addonChips,
     addonCost: t.addonCost,
     maxRebuys: t.maxRebuys,
+    layoutConfig: safeParseLayout(t.layoutConfig),
   };
+}
+
+/** Parses the stored layout JSON; returns null on absent/corrupt data. */
+function safeParseLayout(raw: string | null): TournamentState["layoutConfig"] {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as TournamentState["layoutConfig"];
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -484,6 +495,24 @@ export async function setLogoImage(relativePath: string | null): Promise<Tournam
   await prisma.tournament.update({
     where: { id: t.id },
     data: { logoImage: relativePath },
+  });
+  const state = await loadState();
+  if (!state) throw new Error("Failed to load state");
+  return state;
+}
+
+/**
+ * Persists a custom display layout (from the drag-n-drop editor), or clears it
+ * (null = default flex layout) so every screen reverts to the stock positions.
+ */
+export async function setLayoutConfig(
+  cfg: TournamentState["layoutConfig"],
+): Promise<TournamentState> {
+  const t = await getActiveTournament();
+  if (!t) throw new Error("No active tournament");
+  await prisma.tournament.update({
+    where: { id: t.id },
+    data: { layoutConfig: cfg ? JSON.stringify(cfg) : null },
   });
   const state = await loadState();
   if (!state) throw new Error("Failed to load state");
