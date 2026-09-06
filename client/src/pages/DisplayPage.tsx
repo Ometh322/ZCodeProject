@@ -135,6 +135,8 @@ export function DisplayPage() {
         isAdminDevice={isAdminDevice}
         alertsEnabled={alerts.enabled}
         onEnableSound={alerts.enable}
+        volume={alerts.volume}
+        onCycleVolume={alerts.cycleVolume}
         onTogglePause={() => send(state.status === "running" ? "PAUSE" : "RESUME")}
       />
     );
@@ -220,7 +222,13 @@ export function DisplayPage() {
         style={{ padding: `${cfg.marginX}px` }}
       >
         <ConnectionDot connected={connected} />
-        <SoundToggle enabled={alerts.enabled} onEnable={alerts.enable} />
+        <SoundToggle
+          enabled={alerts.enabled}
+          onEnable={alerts.enable}
+          volume={alerts.volume}
+          onCycleVolume={alerts.cycleVolume}
+          canAdjust={isAdminDevice}
+        />
         {(
           [
             ["name", cfg.name],
@@ -250,7 +258,13 @@ export function DisplayPage() {
     <div className="relative flex h-dvh flex-col overflow-hidden bg-felt-dark">
       <ConnectionDot connected={connected} />
 
-      <SoundToggle enabled={alerts.enabled} onEnable={alerts.enable} />
+      <SoundToggle
+        enabled={alerts.enabled}
+        onEnable={alerts.enable}
+        volume={alerts.volume}
+        onCycleVolume={alerts.cycleVolume}
+        canAdjust={isAdminDevice}
+      />
 
       {/* Three-column body: fills the whole viewport. */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-6 pt-8 pb-4 lg:grid-cols-[minmax(16rem,1fr)_minmax(0,3fr)_minmax(16rem,1fr)]">
@@ -362,34 +376,55 @@ function ConnectionDot({ connected }: { connected: boolean }) {
 }
 
 /**
- * Sound enable toggle. Until the operator clicks it (a user gesture), the
- * browser blocks all audio. After the click the AudioContext is unlocked for
- * the rest of the tab session. Rendered top-left so it doesn't fight the
- * connection dot top-right.
+ * Sound enable toggle + hall loudness control. Until the operator clicks it
+ * (a user gesture), the browser blocks all audio. Once enabled, the button
+ * cycles the master gain ×1 → ×2 → ×3 → ×4 (persisted per device) — a hall
+ * needs ×2–×4 while a quiet backroom is fine at ×1.
+ *
+ * Adjusting the loudness is limited to devices logged into the admin panel
+ * (same rule as the Space-bar pause hotkey): public kiosks see a static
+ * indicator instead of a clickable button.
  */
 function SoundToggle({
   enabled,
   onEnable,
+  volume,
+  onCycleVolume,
+  canAdjust,
 }: {
   enabled: boolean;
   onEnable: () => void;
+  volume: number;
+  onCycleVolume: () => void;
+  canAdjust: boolean;
 }) {
+  if (!enabled) {
+    return (
+      <button
+        onClick={onEnable}
+        className="fixed left-6 top-6 z-20 animate-pulse rounded-lg border border-gold bg-gold/20 px-4 py-2 text-sm font-medium text-gold transition hover:bg-gold/30"
+        title="Нажмите, чтобы включить звуковые сигналы"
+      >
+        🔊 Включить звук
+      </button>
+    );
+  }
   return (
     <button
-      onClick={onEnable}
-      disabled={enabled}
+      onClick={canAdjust ? onCycleVolume : undefined}
+      disabled={!canAdjust}
       className={`fixed left-6 top-6 z-20 rounded-lg border px-4 py-2 text-sm font-medium transition ${
-        enabled
-          ? "cursor-default border-gold/40 bg-black/40 text-gold/70"
-          : "animate-pulse border-gold bg-gold/20 text-gold hover:bg-gold/30"
+        canAdjust
+          ? "border-gold/40 bg-black/40 text-gold hover:border-gold hover:bg-gold/10"
+          : "cursor-default border-gold/20 bg-black/40 text-gold/50"
       }`}
       title={
-        enabled
-          ? "Звуковые сигналы включены"
-          : "Нажмите, чтобы включить звуковые сигналы"
+        canAdjust
+          ? "Громкость звуковых сигналов: нажмите для усиления (×1 → ×2 → ×3 → ×4)"
+          : "Громкость регулируется только с устройства, где выполнен вход в админку"
       }
     >
-      {enabled ? "🔊 Звук вкл" : "🔊 Включить звук"}
+      🔊 Звук ×{volume}
     </button>
   );
 }
@@ -417,6 +452,8 @@ function MobileDisplay({
   isAdminDevice,
   alertsEnabled,
   onEnableSound,
+  volume,
+  onCycleVolume,
   onTogglePause,
 }: {
   state: TournamentState;
@@ -429,6 +466,8 @@ function MobileDisplay({
   isAdminDevice: boolean;
   alertsEnabled: boolean;
   onEnableSound: () => void;
+  volume: number;
+  onCycleVolume: () => void;
   onTogglePause: () => void;
 }) {
   const isBreak = level?.isBreak ?? false;
@@ -462,8 +501,9 @@ function MobileDisplay({
         />
       </div>
 
-      {/* Sound toggle (top-left) — only before unlock. */}
-      {!alertsEnabled && (
+      {/* Sound control (top-left): unlock button before the first tap,
+          loudness ×N chip afterwards. */}
+      {!alertsEnabled ? (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -472,6 +512,30 @@ function MobileDisplay({
           className="absolute left-4 top-4 animate-pulse rounded border border-gold bg-gold/20 px-2 py-1 text-xs text-gold"
         >
           🔊 Звук
+        </button>
+      ) : (
+        <button
+          onClick={
+            isAdminDevice
+              ? (e) => {
+                  e.stopPropagation();
+                  onCycleVolume();
+                }
+              : undefined
+          }
+          disabled={!isAdminDevice}
+          className={`absolute left-4 top-4 rounded border px-2 py-1 text-xs ${
+            isAdminDevice
+              ? "border-gold/40 bg-black/40 text-gold"
+              : "border-gold/20 bg-black/40 text-gold/50"
+          }`}
+          title={
+            isAdminDevice
+              ? "Громкость: ×1 → ×2 → ×3 → ×4"
+              : "Громкость регулируется только с устройства, где выполнен вход в админку"
+          }
+        >
+          🔊 ×{volume}
         </button>
       )}
 
