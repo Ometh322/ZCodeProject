@@ -175,6 +175,65 @@ export interface AddPlayerInput {
   name: string;
 }
 
+/**
+ * A media file (logo / alert sound) embedded into a settings preset file as
+ * base64, so a single JSON document carries the whole club setup.
+ */
+export interface PresetMedia {
+  /** Original file name, kept for a readable export and extension detection. */
+  filename: string;
+  /** MIME type, e.g. "image/png" or "audio/wav". */
+  mimeType: string;
+  /** Raw file bytes, base64-encoded. */
+  dataBase64: string;
+}
+
+/**
+ * A portable settings snapshot ("preset file") that can be exported from and
+ * imported back into the admin panel. Covers everything a club needs to clone
+ * a setup onto another machine: tournament name, pricing, the full blind
+ * structure, the display-screen layout and the uploaded logo/sound binaries.
+ *
+ * Deliberately NOT included: players, timer position, status and other live
+ * game state — a preset configures a tournament, it does not clone a game.
+ */
+export interface TournamentPreset {
+  /** Constant discriminator, makes the file self-describing. */
+  format: "flash-poker-preset";
+  /** Shape version — bump on breaking changes, import rejects unknown ones. */
+  version: 1;
+  /** ISO timestamp of the export moment. */
+  exportedAt: string;
+  /** Tournament name. */
+  name: string;
+  /** Purchase pricing: chips and cost for all four purchase types + rebuy cap. */
+  pricing: {
+    buyInChips: number;
+    buyInCost: number;
+    rebuyChips: number;
+    rebuyCost: number;
+    doubleRebuyChips: number;
+    doubleRebuyCost: number;
+    addonChips: number;
+    addonCost: number;
+    maxRebuys: number;
+  };
+  /** Full blind structure (levels + breaks, in order). Replaces on import. */
+  levels: Array<
+    Pick<Level, "durationSec" | "smallBlind" | "bigBlind" | "ante" | "isBreak" | "breakTitle">
+  >;
+  /** Saved display-screen layout, or null for the default layout. */
+  layoutConfig: LayoutConfig | null;
+  /** Embedded binaries; null entries mean "no custom file for this slot". */
+  media: {
+    logo: PresetMedia | null;
+    sound1min: PresetMedia | null;
+    sound10sec: PresetMedia | null;
+    soundLevel: PresetMedia | null;
+  };
+}
+
+
 /** Body for updating an existing player. */
 export interface UpdatePlayerInput {
   name?: string;

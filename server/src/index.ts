@@ -34,7 +34,9 @@ async function main(): Promise<void> {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
   const app = express();
-  app.use(express.json());
+  // 30 MB: a settings preset file embeds the logo and alert sounds as base64,
+  // which is ~4/3 of the raw size — the default 100 KB limit would reject it.
+  app.use(express.json({ limit: "30mb" }));
   app.use(
     cors({
       origin: config.corsOrigin,
@@ -60,7 +62,7 @@ async function main(): Promise<void> {
   const broadcaster = createBroadcaster(io);
   const engine = new TimerEngine(broadcaster);
 
-  app.use("/api", createApiRouter(engine, upload));
+  app.use("/api", createApiRouter(engine, upload, UPLOADS_DIR));
 
   registerSocketHandlers(io, engine);
   engine.start();

@@ -167,6 +167,37 @@ export function AdminPage() {
     }
   }
 
+  async function handleExportPreset() {
+    try {
+      const blob = await api.exportPreset();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `flash-preset-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function handleImportPreset(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const ok = window.confirm(
+      "Загрузить настройки из файла?\n\n" +
+        "Текущие название, цены, структура блайндов, логотип, звуковые сигналы " +
+        "и макет экрана будут заменены. Игроки и таймер не затрагиваются.",
+    );
+    if (!ok) return;
+    try {
+      await api.importPreset(file);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   if (!state) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-xl text-slate-400">
@@ -384,6 +415,34 @@ export function AdminPage() {
             onUpload={(e) => handleSoundUpload("level", e)}
             onClear={() => handleClearSound("level")}
           />
+        </div>
+      </section>
+
+      {/* Settings preset file: full setup export/import */}
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <h2 className="mb-1 text-xl font-bold">Файл настроек</h2>
+        <p className="mb-4 text-xs text-slate-500">
+          Одним файлом: название турнира, цены (вход / ребай / двойной ребай /
+          аддон), структура блайндов, логотип, звуковые сигналы и макет экрана
+          зала. Удобно, чтобы сохранить настройку под регулярный турнир или
+          перенести её на другой компьютер. Игроки и таймер в файл не входят.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleExportPreset}
+            className="rounded border border-gold/40 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:bg-gold/20"
+          >
+            ⬇ Скачать файл настроек
+          </button>
+          <label className="cursor-pointer rounded border border-gold/40 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:bg-gold/20">
+            ⬆ Загрузить из файла…
+            <input
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={handleImportPreset}
+            />
+          </label>
         </div>
       </section>
 

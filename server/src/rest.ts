@@ -1,8 +1,15 @@
 import { Router } from "express";
 import multer from "multer";
 import path from "node:path";
+import fs from "node:fs";
 import { PRESET_LIST } from "@poker-club/shared";
-import type { AddPlayerInput, UpdatePlayerInput, UpsertTournamentInput } from "@poker-club/shared";
+import type {
+  AddPlayerInput,
+  PresetMedia,
+  TournamentPreset,
+  UpdatePlayerInput,
+  UpsertTournamentInput,
+} from "@poker-club/shared";
 import { login, requireAdmin } from "./auth.js";
 import type { TimerEngine } from "./timerEngine.js";
 import {
@@ -46,7 +53,11 @@ import type { LayoutConfig } from "@poker-club/shared";
  *
  * Timer control (start/pause/next-level/etc.) happens over Socket.IO, not REST.
  */
-export function createApiRouter(engine: TimerEngine, upload: multer.Multer): Router {
+export function createApiRouter(
+  engine: TimerEngine,
+  upload: multer.Multer,
+  uploadsDir: string,
+): Router {
   const router = Router();
 
   // --- Auth ----------------------------------------------------------------
@@ -200,6 +211,85 @@ export function createApiRouter(engine: TimerEngine, upload: multer.Multer): Rou
     }
   });
 
+  // --- Settings preset file (export / import) ------------------------------
+  // One JSON document with everything needed to clone the club setup on
+  // another machine: name, pricing, blinds, layout and the logo/sound files
+  // embedded as base64. Live game state (players, timer) is never included.
+
+  router.get("/tournament/preset", async (_req, res) => {
+    const state = await loadState();
+    if (!state) {
+      res.status(404).json({ error: "No active tournament" });
+      return;
+    }
+    try {
+      const preset: TournamentPreset = {
+        format: "flash-poker-preset",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        name: state.name,
+        pricing: {
+          buyInChips: state.buyInChips,
+          buyInCost: state.buyInCost,
+          rebuyChips: state.rebuyChips,
+          rebuyCost: state.rebuyCost,
+          doubleRebuyChips: state.doubleRebuyChips,
+          doubleRebuyCost: state.doubleRebuyCost,
+          addonChips: state.addonChips,
+          addonCost: state.addonCost,
+          maxRebuys: state.maxRebuys,
+        },
+        levels: state.levels.map((l) => ({
+          durationSec: l.durationSec,
+          smallBlind: l.smallBlind,
+          bigBlind: l.bigBlind,
+          ante: l.ante,
+          isBreak: l.isBreak,
+          breakTitle: l.breakTitle,
+        })),
+        layoutConfig: state.layoutConfig,
+        media: {
+          logo: await readPresetMedia(uploadsDir, state.logoImage),
+          sound1min: await readPresetMedia(uploadsDir, state.soundAlert1Min),
+          sound10sec: await readPresetMedia(uploadsDir, state.soundAlert10Sec),
+          soundLevel: await readPresetMedia(uploadsDir, state.soundAlertLevel),
+        },
+      };
+      res.json(preset);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  router.post("/tournament/preset", async (req, res) => {
+    const problems = validatePreset(req.body);
+    if (problems.length > 0) {
+      res.status(400).json({ error: `Invalid preset file: ${problems.join("; ")}` });
+      return;
+    }
+    const preset = req.body as TournamentPreset;
+    try {
+      // Persist embedded media first so the tournament row can point at the
+      // newly written files; a missing entry clears the slot.
+      const logo = await writePresetMedia(uploadsDir, preset.media.logo, "image");
+      const sound1min = await writePresetMedia(uploadsDir, preset.media.sound1min, "audio");
+      const sound10sec = await writePresetMedia(uploadsDir, preset.media.sound10sec, "audio");
+      const soundLevel = await writePresetMedia(uploadsDir, preset.media.soundLevel, "audio");
+
+      await upsertTournament({ name: preset.name, levels: preset.levels, ...preset.pricing });
+      await setLayoutConfig(preset.layoutConfig ?? null);
+      await setLogoImage(logo);
+      await setSoundAlert("1min", sound1min);
+      await setSoundAlert("10sec", sound10sec);
+      await setSoundAlert("level", soundLevel);
+
+      await engine.sync();
+      res.json(await loadState());
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
   router.post("/tournament/players", async (req, res) => {
     const input = req.body as AddPlayerInput;
     if (!input?.name) {
@@ -344,4 +434,130 @@ export function createUploadMiddleware(uploadsDir: string): multer.Multer {
       }
     },
   });
+}
+
+// --- Preset file helpers ----------------------------------------------------
+
+/** Extension → MIME map used when embedding uploaded files into a preset. */
+const MIME_BY_EXT: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/aac",
+};
+
+/**
+ * Reads an uploaded file behind a `/uploads/...` relative URL into a preset
+ * media entry. Returns null when the slot is empty or the file went missing
+ * (e.g. a volume was wiped) — a half-broken export is better than a failed one.
+ */
+async function readPresetMedia(
+  uploadsDir: string,
+  relativeUrl: string | null,
+): Promise<PresetMedia | null> {
+  if (!relativeUrl) return null;
+  const filename = path.basename(relativeUrl);
+  try {
+    const data = await fs.promises.readFile(path.join(uploadsDir, filename));
+    return {
+      filename,
+      mimeType: MIME_BY_EXT[path.extname(filename).toLowerCase()] ?? "application/octet-stream",
+      dataBase64: data.toString("base64"),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Writes an embedded media entry back to the uploads dir under a fresh unique
+ * name (never overwrites existing files) and returns its `/uploads/...` URL.
+ * `kind` guards against swapped files, e.g. a sound in the logo slot.
+ */
+async function writePresetMedia(
+  uploadsDir: string,
+  media: PresetMedia | null,
+  kind: "image" | "audio",
+): Promise<string | null> {
+  if (!media) return null;
+  if (!/^image\//.test(media.mimeType) && !/^audio\//.test(media.mimeType)) {
+    throw new Error(`Недопустимый тип файла в пресете: ${media.mimeType}`);
+  }
+  if (kind === "image" && !/^image\//.test(media.mimeType)) {
+    throw new Error("В слоте логотипа ожидается изображение");
+  }
+  if (kind === "audio" && !/^audio\//.test(media.mimeType)) {
+    throw new Error("В слоте звука ожидается аудиофайл");
+  }
+  // 8 MB decoded — same cap as direct uploads.
+  if (media.dataBase64.length > 8 * 1024 * 1024 * 1.34) {
+    throw new Error(`Файл ${media.filename} больше 8 МБ`);
+  }
+  const ext = path.extname(media.filename) || ".bin";
+  const name = `preset-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+  await fs.promises.writeFile(path.join(uploadsDir, name), Buffer.from(media.dataBase64, "base64"));
+  return `/uploads/${name}`;
+}
+
+/** Structural validation of an uploaded preset document; returns problems. */
+function validatePreset(v: unknown): string[] {
+  const problems: string[] = [];
+  const p = v as Record<string, unknown> | null;
+  if (!p || typeof p !== "object") return ["не JSON-объект"];
+  if (p.format !== "flash-poker-preset") problems.push("это не файл настроек ФЛЭШ");
+  if (p.version !== 1) problems.push(`неподдерживаемая версия: ${String(p.version)}`);
+  if (typeof p.name !== "string" || !p.name) problems.push("пустое название турнира");
+  const pricing = p.pricing as Record<string, unknown> | undefined;
+  const pricingKeys = [
+    "buyInChips",
+    "buyInCost",
+    "rebuyChips",
+    "rebuyCost",
+    "doubleRebuyChips",
+    "doubleRebuyCost",
+    "addonChips",
+    "addonCost",
+    "maxRebuys",
+  ];
+  if (!pricing || !pricingKeys.every((k) => typeof pricing[k] === "number")) {
+    problems.push("некорректный блок цен");
+  }
+  if (
+    !Array.isArray(p.levels) ||
+    p.levels.length === 0 ||
+    !(p.levels as Array<Record<string, unknown>>).every(
+      (l) =>
+        typeof l.durationSec === "number" &&
+        typeof l.smallBlind === "number" &&
+        typeof l.bigBlind === "number" &&
+        typeof l.ante === "number" &&
+        typeof l.isBreak === "boolean" &&
+        (l.breakTitle === null || typeof l.breakTitle === "string"),
+    )
+  ) {
+    problems.push("некорректная структура уровней");
+  }
+  const media = p.media as Record<string, unknown> | undefined;
+  if (!media || typeof media !== "object") {
+    problems.push("нет блока media");
+  } else {
+    for (const key of ["logo", "sound1min", "sound10sec", "soundLevel"]) {
+      const m = media[key] as Record<string, unknown> | null | undefined;
+      if (
+        m !== null &&
+        m !== undefined &&
+        !(typeof m.filename === "string" && typeof m.mimeType === "string" && typeof m.dataBase64 === "string")
+      ) {
+        problems.push(`некорректный файл в слоте ${key}`);
+      }
+    }
+  }
+  return problems;
 }
