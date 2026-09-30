@@ -196,6 +196,32 @@ export const api = {
     });
   },
 
+  /**
+   * Downloads the full settings preset (name, pricing, blinds, layout and the
+   * embedded logo/sound files) as a JSON document.
+   */
+  async exportPreset(): Promise<Blob> {
+    const res = await fetch(`${BASE}/api/tournament/preset`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(body.error ?? `Export failed: ${res.status}`);
+    }
+    return res.blob();
+  },
+
+  /** Applies a previously exported preset file, replacing the current setup. */
+  importPreset(file: File): Promise<TournamentState> {
+    return file.text().then((text) =>
+      request<TournamentState>("/api/tournament/preset", {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: text,
+      }),
+    );
+  },
+
   /** Resets the display layout back to the default flex flow. */
   resetLayout(): Promise<{ ok: true }> {
     return request<{ ok: true }>("/api/tournament/layout", {
